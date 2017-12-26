@@ -1,9 +1,12 @@
 *Group memebers: Daniel Regassa, Eric Zhang, Nikita Borisov
-*Project Description:
-*User Interface:
+*Project Description: File server similar to Google Docs
+*User Interface: Terminal, using nano as a text editor
 *Technical Design:
-    *Class topics:
+    *Class topics: server/client, semaphores, [fill in more]
     *Work break down:
+      *Daniel: 
+      *Eric:
+      *Nikita:
     *Data Structures used:
     *Algorithms used:
 *Timeline:
