@@ -1,6 +1,6 @@
 *Group memebers: Daniel Regassa, Eric Zhang, Nikita Borisov
 
-*Project Description: File server similar to GitHub or Google Docs that works as a file transfer protocol. It will allow users to edit the
+*Project Description: File server similar to GitHub that works as a file transfer protocol. It will allow users to edit the
     same text files by pulling them from a repository, modifying them, and pushing the modified versions back to the repository.
     An FTP server will handle client requests to pull and push files(verifying client permissions), by. The server will also be able
     to add submodules to link one repo to another.
@@ -12,8 +12,8 @@
     *Class topics: server/client & networking, processes(to run text editor), pipes(to send pull requests/transfer files),  
         allocating memory, working with files & finding information about files
     *Work break down:
-        *Daniel: Code for adding submodule(server side)/displaying repo contents/updating commit history file/pull request queue
-        *Eric: Code for handeling client side commands(pull/push/add submodule)
+        *Daniel: Code for adding submodule(server side)/displaying repo contents/updating commit history file
+        *Eric: Code for handeling client side commands(pull/push/add submodule)/pull request queue
         *Nikita: Client permission verification(server side)/ server/client file transferring
     *Data Structures used: Repo struct(contains paths to files/commit history file/int[] for userIDs(permissions)), Queues for \
         pull requests(server side)
@@ -22,4 +22,7 @@
 *Timeline:
     *01-01-2018: Handle user request to create repos by creating repo struct
     *05-01-2018: Establish client/server connections/ verify client permissions in order to gain access to files
-    *07-01-2018: Handle pull requests(transfer files) and display repo content in terminal
+    *07-01-2018: Handle pull requests(transfer files to client) by following queue order/ display repo contents in terminal
+    *12-01-2018: Handle add/commit/push requests(transfer files to server) / Allow certain users to change repo permissions
+    *14-01-2018: Server should update commit history file
+    *19-01-2018: Server can add submodules 
