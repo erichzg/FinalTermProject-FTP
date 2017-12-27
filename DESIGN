@@ -1,15 +1,25 @@
 *Group memebers: Daniel Regassa, Eric Zhang, Nikita Borisov
+
 *Project Description: File server similar to GitHub or Google Docs that works as a file transfer protocol. It will allow users to edit the
-    same text files by pulling them from a repository, modifying them, and pushing the modified versions back to the repository. 
+    same text files by pulling them from a repository, modifying them, and pushing the modified versions back to the repository.
+    An FTP server will handle client requests to pull and push files(verifying client permissions), by. The server will also be able
+    to add submodules to link one repo to another.
+    
 *User Interface: Users will use terminal commands to perform actions such as pulling, modifying, and pushing files. Users can use nano
-    as the in-terminal text editor for modifying files.
+    as the in-terminal text editor for modifying files. There will also be terminal commands for creating repos and adding submodules.
+    
 *Technical Design:
-    *Class topics: server/client, semaphores, networking, processes(to run text editor), pipes(to send messages to repo), 
-        allocating memory, working with files/finding information about files
+    *Class topics: server/client & networking, processes(to run text editor), pipes(to send pull requests/transfer files),  
+        allocating memory, working with files & finding information about files
     *Work break down:
-      *Daniel: 
-      *Eric:
-      *Nikita:
-    *Data Structures used: Queues for edit requests
+        *Daniel: Code for adding submodule(server side)/displaying repo contents/updating commit history file/pull request queue
+        *Eric: Code for handeling client side commands(pull/push/add submodule)
+        *Nikita: Client permission verification(server side)/ server/client file transferring
+    *Data Structures used: Repo struct(contains paths to files/commit history file/int[] for userIDs(permissions)), Queues for \
+        pull requests(server side)
     *Algorithms used: Three-Way-Handshake algo, fork/execute algo for opening default text editor,subserver forking
+    
 *Timeline:
+    *01-01-2018: Handle user request to create repos by creating repo struct
+    *05-01-2018: Establish client/server connections/ verify client permissions in order to gain access to files
+    *07-01-2018: Handle pull requests(transfer files) and display repo content in terminal
