@@ -1,12 +1,15 @@
 *Group memebers: Daniel Regassa, Eric Zhang, Nikita Borisov
-*Project Description: File server similar to Google Docs
-*User Interface: Terminal, using nano as a text editor
+*Project Description: File server similar to GitHub or Google Docs that works as a file transfer protocol. It will allow users to edit the
+    same text files by pulling them from a repository, modifying them, and pushing the modified versions back to the repository. 
+*User Interface: Users will use terminal commands to perform actions such as pulling, modifying, and pushing files. Users can use nano
+    as the in-terminal text editor for modifying files.
 *Technical Design:
-    *Class topics: server/client, semaphores, [fill in more]
+    *Class topics: server/client, semaphores, networking, processes(to run text editor), pipes(to send messages to repo), 
+        allocating memory, working with files/finding information about files
     *Work break down:
       *Daniel: 
       *Eric:
       *Nikita:
-    *Data Structures used:
+    *Data Structures used: 
     *Algorithms used:
 *Timeline:
