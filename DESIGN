@@ -10,6 +10,6 @@
       *Daniel: 
       *Eric:
       *Nikita:
-    *Data Structures used: 
-    *Algorithms used: Three-Way-Handshake algo
+    *Data Structures used: Queues for edit requests
+    *Algorithms used: Three-Way-Handshake algo, fork/execute algo for opening default text editor,subserver forking
 *Timeline:
