@@ -1,0 +1,1 @@
+int checkuserinfo(char *, char *);
