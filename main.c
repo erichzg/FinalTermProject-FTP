@@ -10,7 +10,7 @@
 
 
 
-//returns 1 if everything cheks out
+//returns userID if everything checks out
 int checkuserinfo(char * username, char * password, char * serverIP){
     char * buffer = (char *) malloc(256 * sizeof(char));
 
@@ -25,7 +25,7 @@ int checkuserinfo(char * username, char * password, char * serverIP){
     return buffer[0] - '0';
 }
 
-//returns 1 if everything new account is created successfully
+//returns userID if everything checks out
 int create_account(char * username, char * password, char * serverIP){
     char * buffer = (char *) malloc(256 * sizeof(char));
 
@@ -58,36 +58,35 @@ int main(){
         }
     }
 
-    int signedin = 0; //0 if not signed in
-    int userId;
+    int userId = 0;
 
-    printf("Do you have an account yet?(y/n)\n");
+    /*printf("Do you have an account yet?(y/n)\n");
     memset(ans, 0, sizeof(ans));
     fgets(ans, 256, stdin);
     if(ans[0] == 'y'){
-        while(!signedin) {
+        while(!userId) {
             printf("Username: \n");
             fgets(username, 256, stdin);
             printf("Password: \n"); //make this hidden***
             fgets(password, 256, stdin);
-            signedin = checkuserinfo(username, password,serverIP);
-            if (!signedin) {
+            userId = checkuserinfo(username, password,serverIP);
+            if (!userId) {
                 printf("Error logging in. Please try again\n");
             }
         }
     }
     else{
-        while(!signedin) {
+        while(!userId) {
             printf("Please create a username: \n");
             fgets(username, 256, stdin);
             printf("Please type in a password: \n"); //make this hidden***
             fgets(password, 256, stdin);
-            signedin = create_account(username, password,serverIP);
-            if (!signedin) {
+            userId = create_account(username, password,serverIP);
+            if (!userId) {
                 printf("Username already exists please try again\n");
             }
         }
-    }
+    }*/
 
     client(userId, serverIP);
     //free stuff***
