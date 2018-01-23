@@ -3,42 +3,6 @@
 #include <string.h>
 #include "networking.h"
 #include "main.h"
-#define _XOPEN_SOURCE       /* See feature_test_macros(7) */
-#include <unistd.h>
-#define _GNU_SOURCE         /* See feature_test_macros(7) */
-#include <crypt.h>
-
-
-
-//returns userID if everything checks out
-int checkuserinfo(char * username, char * password, char * serverIP){
-    char * buffer = (char *) malloc(256 * sizeof(char));
-
-    char * encrypted = crypt(password, "ab");
-    //check file of encrypted passwords***
-    int server_socket = 0; //***
-
-    write(server_socket, "CHECK", sizeof(buffer));
-    write(server_socket, username, sizeof(buffer));
-    write(server_socket, encrypted, sizeof(encrypted));
-    read(server_socket, buffer, sizeof(buffer));
-    return buffer[0] - '0';
-}
-
-//returns userID if everything checks out
-int create_account(char * username, char * password, char * serverIP){
-    char * buffer = (char *) malloc(256 * sizeof(char));
-
-    char * encrypted = crypt(password, "ab");
-    //check file of encrypted passwords***
-    int server_socket = 0; //***
-
-    write(server_socket, "CREATE", sizeof(buffer));
-    write(server_socket, username, sizeof(buffer));
-    write(server_socket, encrypted, sizeof(encrypted));
-    read(server_socket, buffer, sizeof(buffer));
-    return buffer[0] - '0';
-}
 
 
 int main(){
@@ -57,38 +21,8 @@ int main(){
             forking_server();
         }
     }
+    //network setup stuff ***
 
-    int userId = 0;
-
-    /*printf("Do you have an account yet?(y/n)\n");
-    memset(ans, 0, sizeof(ans));
-    fgets(ans, 256, stdin);
-    if(ans[0] == 'y'){
-        while(!userId) {
-            printf("Username: \n");
-            fgets(username, 256, stdin);
-            printf("Password: \n"); //make this hidden***
-            fgets(password, 256, stdin);
-            userId = checkuserinfo(username, password,serverIP);
-            if (!userId) {
-                printf("Error logging in. Please try again\n");
-            }
-        }
-    }
-    else{
-        while(!userId) {
-            printf("Please create a username: \n");
-            fgets(username, 256, stdin);
-            printf("Please type in a password: \n"); //make this hidden***
-            fgets(password, 256, stdin);
-            userId = create_account(username, password,serverIP);
-            if (!userId) {
-                printf("Username already exists please try again\n");
-            }
-        }
-    }*/
-
-    client(userId, serverIP);
-    //free stuff***
+    client(serverIP);
     return 0;
 }

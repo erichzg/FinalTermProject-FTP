@@ -30,7 +30,7 @@ int client_setup(char * server);
 
 int forking_server();
 
-void client(int, char *);
+void client(char *);
 
 void handle_error();
 

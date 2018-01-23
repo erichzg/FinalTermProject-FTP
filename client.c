@@ -1,7 +1,17 @@
 #include "networking.h"
+#define _XOPEN_SOURCE       /* See feature_test_macros(7) */
+#include <unistd.h>
+#define _GNU_SOURCE         /* See feature_test_macros(7) */
+#include <crypt.h>
+
+int create_account(char * username, char * password, int server_socket);
+int checkuserinfo(char * username, char * password, int server_socket);
 
 //main client connection
-void client(int userId, char * serverIP){
+void client(char * serverIP){
+  char username[256];
+  char password[256];
+  int userId = 0;
 
   int server_socket;
   char buffer[BUFFER_SIZE];
@@ -11,11 +21,36 @@ void client(int userId, char * serverIP){
   int fd;
   //server_socket = client_setup( serverIP); ***
 
-
+    //login code***
+    /*printf("Do you have an account yet?(y/n)\n");
+    memset(buffer, 0, sizeof(buffer));
+    fgets(buffer, 256, stdin);
+    if(buffer[0] == 'y'){
+        while(!userId) {
+            printf("Username: \n");
+            fgets(username, 256, stdin);
+            printf("Password: \n"); //make this hidden***
+            fgets(password, 256, stdin);
+            userId = checkuserinfo(username, password,server_socket);
+            if (!userId) {
+                printf("Error logging in. Please try again\n");
+            }
+        }
+    }
+    else{
+        while(!userId) {
+            printf("Please create a username: \n");
+            fgets(username, 256, stdin);
+            printf("Please type in a password: \n"); //make this hidden***
+            fgets(password, 256, stdin);
+            userId = create_account(username, password,server_socket);
+            if (!userId) {
+                printf("Username already exists please try again\n");
+            }
+        }
+    }*/
 
     while (1) {
-        //view available files in server side code
-
         printf("Would you like to push or pull (a file) or view available files in the FTP? (push/pull/view)\n");
         fgets(buffer, sizeof(buffer), stdin);
         *strchr(buffer, '\n') = 0;
@@ -115,4 +150,32 @@ void error_check( int i, char *s ) {
         printf("[%s] error %d: %s\n", s, errno, strerror(errno) );
         exit(1);
     }
+}
+
+//returns userID if everything checks out
+int checkuserinfo(char * username, char * password, int server_socket){
+    char * buffer = (char *) malloc(256 * sizeof(char));
+
+    char * encrypted = crypt(password, "ab");
+    //check file of encrypted passwords***
+
+    write(server_socket, "CHECK", sizeof(buffer));
+    write(server_socket, username, sizeof(buffer));
+    write(server_socket, encrypted, sizeof(encrypted));
+    read(server_socket, buffer, sizeof(buffer));
+    return atoi(buffer);
+}
+
+//returns userID if everything checks out
+int create_account(char * username, char * password, int server_socket){
+    char * buffer = (char *) malloc(256 * sizeof(char));
+
+    char * encrypted = crypt(password, "ab");
+    //check file of encrypted passwords***
+
+    write(server_socket, "CREATE", sizeof(buffer));
+    write(server_socket, username, sizeof(buffer));
+    write(server_socket, encrypted, sizeof(encrypted));
+    read(server_socket, buffer, sizeof(buffer));
+    return atoi(buffer);
 }
