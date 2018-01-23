@@ -1,1 +1,1 @@
-int checkuserinfo(char *, char *);
+int checkuserinfo(char *, char *,char*);

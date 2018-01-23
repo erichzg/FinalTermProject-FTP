@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "client.h"
+#include "networking.h"
 #include "main.h"
 #define _XOPEN_SOURCE       /* See feature_test_macros(7) */
 #include <unistd.h>
@@ -11,12 +11,12 @@
 
 
 //returns 1 if everything cheks out
-int checkuserinfo(char * username, char * password){
+int checkuserinfo(char * username, char * password, char * serverIP){
     char * buffer = (char *) malloc(256 * sizeof(char));
 
     char * encrypted = crypt(password, "ab");
     //check file of encrypted passwords***
-    int server_socket = hidden_connect_client();
+    int server_socket = hidden_connect_client(serverIP);
     write(server_socket, encrypted, sizeof(encrypted));
     read(server_socket, buffer, sizeof(buffer));
     return buffer[0] - '0';
@@ -29,6 +29,7 @@ int main(){
     char * ans = (char *) malloc(256 * sizeof(char));
     char * username = (char *) malloc(256 * sizeof(char));
     char * password = (char *) malloc(256 * sizeof(char));
+    char serverIP[256] = "100.2.206.108"; //DEFAULT IP FOR TESTING
     fgets(ans,256,stdin);
     
     if(ans[0] == 'y') {
@@ -48,14 +49,14 @@ int main(){
             fgets(username, 256, stdin);
             printf("Password: \n"); //make this hidden***
             fgets(password, 256, stdin);
-            signedin = checkuserinfo(username, password);
+            signedin = checkuserinfo(username, password,serverIP);
             if (!signedin) {
                 printf("Error logging in. Please try again\n");
             }
         }
     }
 
-    client(userId);
+    client(userId, serverIP);
     //free stuff***
     return 0;
 }
