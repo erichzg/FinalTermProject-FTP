@@ -27,6 +27,14 @@ void client(int userId){
   }
 }
 
-void hidden_connect_client(){
-    printf("w");
+int hidden_connect_client(){
+    int server_socket;
+
+/*
+  if (argc == 2)
+    server_socket = client_setup( argv[1]);
+  else
+    server_socket = client_setup( TEST_IP );
+*/
+    return server_socket;
 }

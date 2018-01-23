@@ -12,10 +12,14 @@
 
 //returns 1 if everything cheks out
 int checkuserinfo(char * username, char * password){
+    char * buffer = (char *) malloc(256 * sizeof(char));
+
     char * encrypted = crypt(password, "ab");
     //check file of encrypted passwords***
-    hidden_connect_client();
-    return 0;
+    int server_socket = hidden_connect_client();
+    write(server_socket, encrypted, sizeof(encrypted));
+    read(server_socket, buffer, sizeof(buffer));
+    return buffer[0] - '0';
 }
 
 

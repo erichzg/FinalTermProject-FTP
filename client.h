@@ -1,2 +1,2 @@
 void client(int);
-void hidden_connect_client();
+int hidden_connect_client();
