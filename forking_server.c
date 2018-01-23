@@ -72,12 +72,12 @@ void subserver(int client_socket) {
     }
     else if(!strcmp(buffer,"CHECK")){
         //PASSWORD CHECKING CODE ***
-        int userId = 0;
+        int userId = 1;
         write(client_socket, &userId, sizeof(userId));
     }
     else if(!strcmp(buffer,"CREATE")){
         //ACCOUNT CREATING CODE ***
-        int userId = 0;
+        int userId = 1;
         write(client_socket, &userId, sizeof(userId));
     }
   }//end read loop

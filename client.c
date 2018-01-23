@@ -18,10 +18,10 @@ void client(char * serverIP){
   char filePath[BUFFER_SIZE];
   char fileContent[1024];
   int fd;
-  //server_socket = client_setup( serverIP); ***
+  server_socket = client_setup( serverIP);
 
     //login code***
-    /*printf("Do you have an account yet?(y/n)\n");
+    printf("Do you have an account yet?(y/n)\n");
     memset(buffer, 0, sizeof(buffer));
     fgets(buffer, 256, stdin);
     if(buffer[0] == 'y'){
@@ -47,7 +47,7 @@ void client(char * serverIP){
                 printf("Username already exists please try again\n");
             }
         }
-    }*/
+    }
 
     while (1) {
         printf("Would you like to push or pull (a file) or view available files in the FTP? (push/pull/view)\n");
