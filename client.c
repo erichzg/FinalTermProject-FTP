@@ -1,6 +1,5 @@
 #include "networking.h"
 
-
 //main client connection
 void client(int userId, char * serverIP){
 
@@ -14,10 +13,10 @@ void client(int userId, char * serverIP){
 
 
 
-    while () {
+    while (1) {
         //view available files in server side code
 
-        printf("Would you like to push or pull a file? (push/pull)\n");
+        printf("Would you like to push or pull (a file) or view available files in the FTP? (push/pull/view)\n");
         fgets(buffer, sizeof(buffer), stdin);
         *strchr(buffer, '\n') = 0;
         if(!strcmp("push",buffer)){ //push file code
@@ -34,7 +33,8 @@ void client(int userId, char * serverIP){
             fgets(filePath, sizeof(filePath), stdin);
             *strchr(filePath, '\n') = 0;
             //accessing file contents
-            fd = open(filePath, O_RDONLY);
+            if((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
+                handle_error();
             read(fd, fileContent, sizeof(fileContent));
             //sending file contents
             write(server_socket, fileContent, sizeof(fileContent));
@@ -50,7 +50,7 @@ void client(int userId, char * serverIP){
             read(server_socket, buffer, sizeof(buffer));
 
             //file transfer code ***
-            printf("Where would you like the file to be pulled?(enter a path)\n");
+            printf("Where would you like the file contents to be pulled?(enter a path to file)\n");
             fgets(filePath, sizeof(filePath), stdin);
             *strchr(filePath, '\n') = 0;
             fd = open(filePath, O_CREAT|O_WRONLY);
@@ -60,8 +60,14 @@ void client(int userId, char * serverIP){
             write(fd, fileContent, sizeof(fileContent));
             close(fd);
         }
+        else if(!strcmp("view",buffer)){
+            write(server_socket, "VIEW", sizeof("VIEW")); //view request sent
+
+            //VIEWING CODE ***
+            read(server_socket, stdout, sizeof(fileContent)); //get this to read to stdout***
+        }
         else{
-            printf("Please type in 'push' or 'pull'.");
+            printf("Please type in 'push', 'pull', or 'view'.");
         }
   }
 }

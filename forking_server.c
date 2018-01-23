@@ -3,6 +3,11 @@
 void process(char *s);
 void subserver(int from_client);
 
+void handle_error(){
+    printf("Error: %s\n", strerror(errno));
+    exit(1);
+}
+
 int forking_server() {
 
   int listen_socket;
@@ -25,6 +30,7 @@ void subserver(int client_socket) {
     char file[BUFFER_SIZE];
     char filePath[BUFFER_SIZE];
     char fileContent[1024];
+    char filesInDir[1024];
     int fd;
 
   while (read(client_socket, buffer, sizeof(buffer))) {
@@ -53,11 +59,16 @@ void subserver(int client_socket) {
         strcpy(filePath, "./fileDir/");
         strcat(filePath,file);
         //accessing file contents
-        fd = open(filePath, O_RDONLY); //insert errno code here ***
+        if((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
+            handle_error();
         read(fd, fileContent, sizeof(fileContent));
         //sending file contents
         write(client_socket, fileContent, sizeof(fileContent));
         close(fd);
+    }
+    else if(!strcmp(buffer,"VIEW")){
+        //VIEWING CODE ***
+        write(client_socket, filesInDir, sizeof(fileContent));
     }
   }//end read loop
   close(client_socket);

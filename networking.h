@@ -33,5 +33,7 @@ int forking_server();
 void client(int, char *);
 int hidden_connect_client(char *);
 
+void handle_error();
+
 
 #endif
