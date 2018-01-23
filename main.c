@@ -33,8 +33,11 @@ int main(){
     fgets(ans,256,stdin);
     
     if(ans[0] == 'y') {
-        printf("Creating new server...\n");
+        printf("Creating new server on this computer...\n");
         //creating new server base code***
+        if(!fork()){ //child
+            forking_server();
+        }
     }
 
     int signedin = 0; //0 if not signed in
