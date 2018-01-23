@@ -47,9 +47,9 @@ int main(){
     char * ans = (char *) malloc(256 * sizeof(char));
     char * username = (char *) malloc(256 * sizeof(char));
     char * password = (char *) malloc(256 * sizeof(char));
-    char serverIP[256] = "100.2.206.108"; //DEFAULT IP FOR TESTING
+    char serverIP[256] = "127.0.0.1"; //DEFAULT IP FOR TESTING
     fgets(ans,256,stdin);
-    
+    *strchr(ans, '\n') = 0;
     if(ans[0] == 'y') {
         printf("Creating new server on this computer...\n");
         //creating new server base code***

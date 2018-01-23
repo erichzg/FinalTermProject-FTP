@@ -6,18 +6,63 @@ void client(int userId, char * serverIP){
 
   int server_socket;
   char buffer[BUFFER_SIZE];
-  char * ans = (char *) malloc(256 * sizeof(char));
-  server_socket = client_setup( serverIP);
+  char file[BUFFER_SIZE];
+  char filePath[BUFFER_SIZE];
+  char fileContent[1024];
+  int fd;
+  //server_socket = client_setup( serverIP);
 
 
 
-    while (1) {
-    printf("enter data: ");
-    fgets(buffer, sizeof(buffer), stdin);
-    *strchr(buffer, '\n') = 0;
-    write(server_socket, buffer, sizeof(buffer));
-    read(server_socket, buffer, sizeof(buffer));
-    printf("received: [%s]\n", buffer);
+    while () {
+        //view available files in server side code
+
+        printf("Would you like to push or pull a file? (push/pull)\n");
+        fgets(buffer, sizeof(buffer), stdin);
+        *strchr(buffer, '\n') = 0;
+        if(!strcmp("push",buffer)){ //push file code
+            printf("What is the name of the file you are pushing?\n");
+            fgets(file, sizeof(file), stdin);
+            *strchr(file, '\n') = 0;
+            write(server_socket, "PUSH", sizeof("PUSH")); //push request sent
+            read(server_socket, buffer, sizeof(buffer));
+            write(server_socket, file, sizeof(file)); //file name sent
+            read(server_socket, buffer, sizeof(buffer));
+
+            //file transfer code ***
+            printf("What is the path to this file?\n");
+            fgets(filePath, sizeof(filePath), stdin);
+            *strchr(filePath, '\n') = 0;
+            //accessing file contents
+            fd = open(filePath, O_RDONLY);
+            read(fd, fileContent, sizeof(fileContent));
+            //sending file contents
+            write(server_socket, fileContent, sizeof(fileContent));
+            close(fd);
+        }
+        else if(!strcmp("pull",buffer)){//pull file code
+            printf("What is the name of the file you are pulling?\n");
+            fgets(file, sizeof(file), stdin);
+            *strchr(file, '\n') = 0;
+            write(server_socket, "PULL", sizeof("PULL")); //pull request sent
+            read(server_socket, buffer, sizeof(buffer));
+            write(server_socket, file, sizeof(file)); //file name sent
+            read(server_socket, buffer, sizeof(buffer));
+
+            //file transfer code ***
+            printf("Where would you like the file to be pulled?(enter a path)\n");
+            fgets(filePath, sizeof(filePath), stdin);
+            *strchr(filePath, '\n') = 0;
+            fd = open(filePath, O_CREAT|O_WRONLY);
+            //recieving file contents
+            read(server_socket, fileContent, sizeof(fileContent));
+            //writing into fd
+            write(fd, fileContent, sizeof(fileContent));
+            close(fd);
+        }
+        else{
+            printf("Please type in 'push' or 'pull'.");
+        }
   }
 }
 

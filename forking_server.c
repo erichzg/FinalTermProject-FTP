@@ -22,12 +22,43 @@ int forking_server() {
 
 void subserver(int client_socket) {
   char buffer[BUFFER_SIZE];
+    char file[BUFFER_SIZE];
+    char filePath[BUFFER_SIZE];
+    char fileContent[1024];
+    int fd;
 
   while (read(client_socket, buffer, sizeof(buffer))) {
 
-    printf("[subserver %d] received: [%s]\n", getpid(), buffer);
-    process(buffer);
-    write(client_socket, buffer, sizeof(buffer));
+    if(!strcmp(buffer, "PUSH")){ //dealing with push request
+        write(client_socket, buffer, sizeof(buffer)); //responds to client
+        read(client_socket, file, sizeof(file)); //recieves file name
+        write(client_socket, buffer, sizeof(buffer)); //responds
+
+        //file transfer code ***
+        strcpy(filePath, "./fileDir/");
+        strcat(filePath,file);
+        fd = open(filePath, O_CREAT|O_WRONLY);
+        //recieving file contents
+        read(client_socket, fileContent, sizeof(fileContent));
+        //writing into fd
+        write(fd, fileContent, sizeof(fileContent));
+        close(fd);
+    }
+    else if(!strcmp(buffer,"PULL")){ //dealing with a pull request
+        write(client_socket, buffer, sizeof(buffer)); //responds to client
+        read(client_socket, file, sizeof(file)); //recieves file name
+        write(client_socket, buffer, sizeof(buffer)); //responds
+
+        //file transfer code ***
+        strcpy(filePath, "./fileDir/");
+        strcat(filePath,file);
+        //accessing file contents
+        fd = open(filePath, O_RDONLY); //insert errno code here ***
+        read(fd, fileContent, sizeof(fileContent));
+        //sending file contents
+        write(client_socket, fileContent, sizeof(fileContent));
+        close(fd);
+    }
   }//end read loop
   close(client_socket);
   exit(0);
@@ -67,7 +98,7 @@ int server_setup() {
     hints->ai_family = AF_INET;  //IPv4 address
     hints->ai_socktype = SOCK_STREAM;  //TCP socket
     hints->ai_flags = AI_PASSIVE;  //Use all valid addresses
-    getaddrinfo(NULL, PORT, hints, &results); //NULL means use local address
+    getaddrinfo(TEST_IP, PORT, hints, &results); //NULL means use local address***
 
     //bind the socket to address and port
     i = bind( sd, results->ai_addr, results->ai_addrlen );
