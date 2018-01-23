@@ -2,11 +2,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <crypt.h>
 #include "client.h"
 #include "main.h"
+#define _XOPEN_SOURCE
 
 //returns 1 if everything cheks out
 int checkuserinfo(char * username, char * password){
+    char * encrypted = crypt(password, "ab");
+    //check file of encrypted passwords***
     return 0;
 }
 
@@ -19,7 +23,7 @@ int main(){
     char * password = (char *) malloc(256 * sizeof(char));
     fgets(ans,256,stdin);
     
-    if(!strcmp(ans,"y")) {
+    if(ans[0] == 'y') {
         printf("Creating new server...\n");
         //creating new server base code***
     }
@@ -28,14 +32,18 @@ int main(){
     int userId;
 
     printf("Do you have an account yet?(y/n)\n");
+    memset(ans, 0, sizeof(ans));
     fgets(ans, 256, stdin);
-    if(!strcmp(ans,"y")){
-        printf("Username: \n");
-        fgets(username, 256, stdin);
-        printf("Password: \n"); //make this hidden***
-        fgets(password, 256, stdin);
-        if(!checkuserinfo(username, password)){
-            printf("error logging in\n");
+    if(ans[0] == 'y'){
+        while(!signedin) {
+            printf("Username: \n");
+            fgets(username, 256, stdin);
+            printf("Password: \n"); //make this hidden***
+            fgets(password, 256, stdin);
+            signedin = checkuserinfo(username, password);
+            if (!signedin) {
+                printf("Error logging in. Please try again\n");
+            }
         }
     }
 
