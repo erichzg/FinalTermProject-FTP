@@ -9,7 +9,7 @@ void client(int userId, char * serverIP){
   char filePath[BUFFER_SIZE];
   char fileContent[1024];
   int fd;
-  //server_socket = client_setup( serverIP);
+  //server_socket = client_setup( serverIP); ***
 
 
 
@@ -70,12 +70,6 @@ void client(int userId, char * serverIP){
             printf("Please type in 'push', 'pull', or 'view'.");
         }
   }
-}
-
-int hidden_connect_client(char * serverIP){
-    int server_socket;
-    server_socket = client_setup( serverIP);
-    return server_socket;
 }
 
 /*=========================

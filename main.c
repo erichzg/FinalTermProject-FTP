@@ -16,7 +16,7 @@ int checkuserinfo(char * username, char * password, char * serverIP){
 
     char * encrypted = crypt(password, "ab");
     //check file of encrypted passwords***
-    int server_socket = hidden_connect_client(serverIP);
+    int server_socket = 0; //***
 
     write(server_socket, "CHECK", sizeof(buffer));
     write(server_socket, username, sizeof(buffer));
@@ -31,7 +31,7 @@ int create_account(char * username, char * password, char * serverIP){
 
     char * encrypted = crypt(password, "ab");
     //check file of encrypted passwords***
-    int server_socket = hidden_connect_client(serverIP);
+    int server_socket = 0; //***
 
     write(server_socket, "CREATE", sizeof(buffer));
     write(server_socket, username, sizeof(buffer));
