@@ -4,13 +4,12 @@
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
 #include <crypt.h>
 
-int create_account(char * username, char * password, int server_socket);
-int checkuserinfo(char * username, char * password, int server_socket);
+int check_or_create_account(char * username, char * password, int server_socket, char * protocol);
 
 //main client connection
 void client(char * serverIP){
-  char username[256];
-  char password[256];
+  char username[BUFFER_SIZE];
+  char password[BUFFER_SIZE];
   int userId = 0;
 
   int server_socket;
@@ -31,7 +30,7 @@ void client(char * serverIP){
             fgets(username, 256, stdin);
             printf("Password: \n"); //make this hidden***
             fgets(password, 256, stdin);
-            userId = checkuserinfo(username, password,server_socket);
+            userId = check_or_create_account(username, password,server_socket,"CHECK");
             if (!userId) {
                 printf("Error logging in. Please try again\n");
             }
@@ -43,7 +42,7 @@ void client(char * serverIP){
             fgets(username, 256, stdin);
             printf("Please type in a password: \n"); //make this hidden***
             fgets(password, 256, stdin);
-            userId = create_account(username, password,server_socket);
+            userId = check_or_create_account(username, password,server_socket,"CREAT");
             if (!userId) {
                 printf("Username already exists please try again\n");
             }
@@ -153,29 +152,18 @@ void error_check( int i, char *s ) {
 }
 
 //returns userID if everything checks out
-int checkuserinfo(char * username, char * password, int server_socket){
+//protocol is either CHECK or CREAT
+int check_or_create_account(char * username, char * password, int server_socket, char * protocol){
     char * buffer = (char *) malloc(256 * sizeof(char));
-
+    int * retInt = (int *) malloc(sizeof(int));
     char * encrypted = crypt(password, "ab");
     //check file of encrypted passwords***
 
-    write(server_socket, "CHECK", sizeof(buffer));
-    write(server_socket, username, sizeof(buffer));
-    write(server_socket, encrypted, sizeof(encrypted));
+    write(server_socket, protocol, sizeof(protocol)); //sends either CHECK or CREAT
     read(server_socket, buffer, sizeof(buffer));
-    return atoi(buffer);
-}
-
-//returns userID if everything checks out
-int create_account(char * username, char * password, int server_socket){
-    char * buffer = (char *) malloc(256 * sizeof(char));
-
-    char * encrypted = crypt(password, "ab");
-    //check file of encrypted passwords***
-
-    write(server_socket, "CREATE", sizeof(buffer));
-    write(server_socket, username, sizeof(buffer));
-    write(server_socket, encrypted, sizeof(encrypted));
+    write(server_socket, username, sizeof(username)); //sending username
     read(server_socket, buffer, sizeof(buffer));
-    return atoi(buffer);
+    write(server_socket, encrypted, sizeof(encrypted)); //sending encrypted password
+    read(server_socket, retInt, sizeof(retInt)); //sending verification in the form of userId
+    return *retInt;
 }

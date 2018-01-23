@@ -70,6 +70,16 @@ void subserver(int client_socket) {
         //VIEWING CODE ***
         write(client_socket, filesInDir, sizeof(fileContent));
     }
+    else if(!strcmp(buffer,"CHECK")){
+        //PASSWORD CHECKING CODE ***
+        int userId = 0;
+        write(client_socket, &userId, sizeof(userId));
+    }
+    else if(!strcmp(buffer,"CREATE")){
+        //ACCOUNT CREATING CODE ***
+        int userId = 0;
+        write(client_socket, &userId, sizeof(userId));
+    }
   }//end read loop
   close(client_socket);
   exit(0);
