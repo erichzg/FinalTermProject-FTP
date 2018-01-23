@@ -1,7 +1,7 @@
 #include "networking.h"
 #include "client.h"
 
-void client(int userId) {
+void client(int userId){
 
   int server_socket;
   char buffer[BUFFER_SIZE];
@@ -25,4 +25,8 @@ void client(int userId) {
     read(server_socket, buffer, sizeof(buffer));
     printf("received: [%s]\n", buffer);
   }
+}
+
+void hidden_connect_client(){
+    printf("w");
 }

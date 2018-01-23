@@ -1,16 +1,20 @@
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <crypt.h>
 #include "client.h"
 #include "main.h"
-#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE       /* See feature_test_macros(7) */
+#include <unistd.h>
+#define _GNU_SOURCE         /* See feature_test_macros(7) */
+#include <crypt.h>
+
+
 
 //returns 1 if everything cheks out
 int checkuserinfo(char * username, char * password){
     char * encrypted = crypt(password, "ab");
     //check file of encrypted passwords***
+    hidden_connect_client();
     return 0;
 }
 
