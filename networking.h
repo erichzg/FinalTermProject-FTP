@@ -15,6 +15,8 @@
 #define BUFFER_SIZE 256
 #define PORT "9001"
 #define TEST_IP "127.0.0.1"
+//#define CHECK_PASSWD 27
+//#define CREAT_ACCONT 28
 
 void error_check(int i, char *s);
 int server_setup();

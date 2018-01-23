@@ -17,6 +17,24 @@ int checkuserinfo(char * username, char * password, char * serverIP){
     char * encrypted = crypt(password, "ab");
     //check file of encrypted passwords***
     int server_socket = hidden_connect_client(serverIP);
+
+    write(server_socket, "CHECK", sizeof(buffer));
+    write(server_socket, username, sizeof(buffer));
+    write(server_socket, encrypted, sizeof(encrypted));
+    read(server_socket, buffer, sizeof(buffer));
+    return buffer[0] - '0';
+}
+
+//returns 1 if everything new account is created successfully
+int create_account(char * username, char * password, char * serverIP){
+    char * buffer = (char *) malloc(256 * sizeof(char));
+
+    char * encrypted = crypt(password, "ab");
+    //check file of encrypted passwords***
+    int server_socket = hidden_connect_client(serverIP);
+
+    write(server_socket, "CREATE", sizeof(buffer));
+    write(server_socket, username, sizeof(buffer));
     write(server_socket, encrypted, sizeof(encrypted));
     read(server_socket, buffer, sizeof(buffer));
     return buffer[0] - '0';
@@ -55,6 +73,18 @@ int main(){
             signedin = checkuserinfo(username, password,serverIP);
             if (!signedin) {
                 printf("Error logging in. Please try again\n");
+            }
+        }
+    }
+    else{
+        while(!signedin) {
+            printf("Please create a username: \n");
+            fgets(username, 256, stdin);
+            printf("Please type in a password: \n"); //make this hidden***
+            fgets(password, 256, stdin);
+            signedin = create_account(username, password,serverIP);
+            if (!signedin) {
+                printf("Username already exists please try again\n");
             }
         }
     }
