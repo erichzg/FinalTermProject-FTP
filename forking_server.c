@@ -38,6 +38,8 @@ void subserver(int client_socket) {
     char username[BUFFER_SIZE];
     char enc_password[BUFFER_SIZE];
     char * double_enc; // double encrypted password
+    char expected_password[BUFFER_SIZE]; //also double encrypted
+    char *init_username_pos; //pointer to where username in question begins
     char account_desc[PACKET_SIZE]; //contains both password and username + wiggle room
     char accounts_content[LOGFILE_SIZE];
     int fd;
@@ -97,16 +99,41 @@ void subserver(int client_socket) {
         write(client_socket, "1", sizeof("1"));
         read(client_socket, username, sizeof(username));
         print_packet(username);
-
         write(client_socket, "2", sizeof("2"));
         read(client_socket, enc_password, sizeof(enc_password));
+
+        //opens passwords file
+        fd = open("./accounts.txt", O_RDONLY|O_APPEND, 0644);
+        read(fd, accounts_content, sizeof(accounts_content));
+
+        //checks if username/password are correct
         double_enc = crypt(enc_password, "bc");
+        strcat(username, ":");
+        init_username_pos = strstr(accounts_content, username);//where the username + : is found
 
+        if(init_username_pos){ //if the username was found
+            strncpy(expected_password,                      //copy into expected password...
+                    strchr(init_username_pos,':') + 1,     //starting from the beginning of the password...
+                    sizeof(char)*(int)(strchr(init_username_pos,';')-strchr(init_username_pos,':')-1));//length of password
+            if(!strcmp(double_enc,expected_password)) {//if passwords match
+                //sends back final confirmation and "log in" client
+                logged_in = 0;
+                write(client_socket, "3", sizeof("3"));
+            }
+            else{//if password doesn't match
+                printf("[Server]: Error username or password isn't correct\n");
+                write(client_socket, ERROR_RESPONSE, sizeof(ERROR_RESPONSE));
+                write(client_socket, "ERROR: Username or password isn't correct\n", sizeof("ERROR: Username or password isn't correct\n"));
+                close(fd);
+            }
+        }
+        else{ //if username not found in accounts_content
+            printf("[Server]: Error username doesn't exist\n");
+            write(client_socket, ERROR_RESPONSE, sizeof(ERROR_RESPONSE));
+            write(client_socket, "ERROR: Username doesn't exist\n", sizeof("ERROR: Username doesn't exist\n"));
+            close(fd);
 
-        //ACCOUNT CHECKING CODE ***
-
-        //sends back final confirmation
-        write(client_socket, "3", sizeof("3"));
+        }
     }
     else if(!strcmp(buffer,"CREAT")){
 
@@ -117,13 +144,12 @@ void subserver(int client_socket) {
 
         write(client_socket, "2", sizeof("2"));
         read(client_socket, enc_password, sizeof(enc_password));
-        double_enc = crypt(enc_password, "bc");
-        strcat(username, ":");
 
         //opens passwords file (creates it when first user creates account)
         fd = open("./accounts.txt", O_RDWR|O_CREAT|O_APPEND, 0644);
         read(fd, accounts_content, sizeof(accounts_content));
         //checks if username already exists(with colon at end to only look for usernames in accounts file)
+        strcat(username, ":");
         if(strstr(accounts_content, username)){
             printf("[Server]: Error username already exist\n");
             write(client_socket, ERROR_RESPONSE, sizeof(ERROR_RESPONSE));
@@ -131,7 +157,9 @@ void subserver(int client_socket) {
             close(fd);
         }
         else {
-            sprintf(account_desc, "%s%s\n%c", username, double_enc, '\0'); //username already has colon at end
+            //combines strings and puts a ;NULL at the end (; separate multiple accounts)
+            double_enc = crypt(enc_password, "bc");
+            sprintf(account_desc, "%s%s;%c", username, double_enc, '\0'); //username already has colon at end
             write(fd, account_desc, num_non_null_bytes(account_desc));
             close(fd);
 

@@ -27,7 +27,6 @@ void client(char * serverIP){
     fgets(buffer, 256, stdin);
     *strchr(buffer, '\n') = 0;
 
-    printf("Please no colons in your username or password.\n");
     if(!strcmp(buffer,"y") || !strcmp(buffer, "Y")){
         while(logged_in < 0) {
             printf("Username: ");
@@ -45,6 +44,7 @@ void client(char * serverIP){
         }
     }
     else if(!strcmp(buffer, "n") || !strcmp(buffer, "N")){
+        printf("Please no colons or semicolons in your username or password.\n");
         while(logged_in < 0) {
             printf("Username: ");
             fgets(username, 256, stdin);
@@ -66,9 +66,8 @@ void client(char * serverIP){
         exit(0);
     }
     memset(password, 0, sizeof(password));
-    memset(username, 0, sizeof(username));
 
-
+    printf("\nWelcome %s. You are now logged in",username);
     while (1) {
         printf("\nWould you like to push or pull (a file), view available files in the FTP, or exit? (push/pull/view/exit): ");
         fgets(buffer, sizeof(buffer), stdin);
@@ -194,29 +193,28 @@ void error_check( int i, char *s ) {
 //returns -1 if failure logging in
 //protocol is either CHECK or CREAT
 int check_or_create_account(char * username, char * password, int server_socket, char * protocol){
-    char * buffer = (char *) malloc(256 * sizeof(char));
-    int retInt = 0;
-    char * encrypted = crypt(password, "ab");
 
-    //checking if passwords and usernames colons
-    if(strchr(username, ':') || strchr(password, ':')){
-        printf("Error: username and password cannot contain colons.\n");
+    //checking if passwords or usernames have colons or semicolons
+    if(strchr(username, ':') || strchr(password, ':') || strchr(password, ';') || strchr(username, ';')){
+        printf("Error: Username and password cannot contain colons or semicolons.\n");
         return -1;
     }
 
     write(server_socket, protocol, sizeof(protocol)); //sends either CHECK or CREAT
-    if(wait_response("1", server_socket) < 0)
+    if(wait_response("1", server_socket) < 0) {
         return -1;
+    }
 
     write(server_socket, username, sizeof(username)); //sending username
-    if(wait_response("2", server_socket) < 0)
+    if(wait_response("2", server_socket) < 0) {
         return -1;
+    }
 
+    char * encrypted = crypt(password, "ab");
     write(server_socket, encrypted, sizeof(encrypted)); //sending encrypted password
     if(wait_response("3", server_socket) < 0)
         return -1;
 
-    free(buffer);
     return 0;
 }
 
@@ -224,19 +222,18 @@ int check_or_create_account(char * username, char * password, int server_socket,
 //returns -1 if error occurs while waiting(error message sent)
 //returns 0 upon success
 int wait_response(char * message, int server_socket){
-    char * buffer = (char *) malloc(256 * sizeof(char));
+    char buffer[BUFFER_SIZE];
 
     while(strcmp(buffer,message)) {
-        read(server_socket, buffer, sizeof(char)*BUFFER_SIZE);
+        read(server_socket, buffer, sizeof(buffer));
 
         //if it gets error message instead of confirmation
         if(strstr(buffer,ERROR_RESPONSE)) {
-            read(server_socket, buffer, sizeof(char)*BUFFER_SIZE); //reading follow up error message
+            read(server_socket, buffer, sizeof(buffer)); //reading follow up error message
             printf("%s", buffer);
             return -1;
         }
     }
-    free(buffer);
     return 0;
 }
 
