@@ -34,9 +34,12 @@ void subserver(int client_socket) {
     char filePath[BUFFER_SIZE];
     char fileContent[PACKET_SIZE];
     char filesInDir[PACKET_SIZE];
+    //concerning login
     char username[BUFFER_SIZE];
     char enc_password[BUFFER_SIZE];
     char * double_enc; // double encrypted password
+    char account_desc[PACKET_SIZE]; //contains both password and username + wiggle room
+    char accounts_content[LOGFILE_SIZE];
     int fd;
 
   while (read(client_socket, buffer, sizeof(buffer))) {
@@ -117,13 +120,27 @@ void subserver(int client_socket) {
         write(client_socket, "2", sizeof("2"));
         read(client_socket, enc_password, sizeof(enc_password));
         double_enc = crypt(enc_password, "bc");
+        strcat(username, ":");
 
+        //opens passwords file (creates it when first user creates account)
+        fd = open("./accounts.txt", O_RDWR|O_CREAT|O_APPEND, 0644);
+        read(fd, accounts_content, sizeof(accounts_content));
+        //checks if username already exists(with colon at end to only look for usernames in accounts file)
+        if(strstr(accounts_content, username)){
+            printf("[Server]: Error username already exist\n");
+            write(client_socket, ERROR_RESPONSE, sizeof(ERROR_RESPONSE));
+            write(client_socket, "ERROR: Username already exists\n", sizeof("ERROR: Username already exists\n"));
+            close(fd);
+        }
+        else {
+            sprintf(account_desc, "%s%s\n%c", username, double_enc, '\0'); //username already has colon at end
+            write(fd, account_desc, num_non_null_bytes(account_desc));
+            close(fd);
 
-        //ACCOUNT CREATING CODE ***
-
-        //sends back userId
-        write(client_socket, "3", sizeof("3"));
-        write(client_socket, &userId, sizeof(userId));
+            //sends back userId
+            write(client_socket, "3", sizeof("3"));
+            write(client_socket, &userId, sizeof(userId));
+        }
     }
   }//end read loop
   close(client_socket);

@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "networking.h"
-#include "main.h"
 
 
 int main() {

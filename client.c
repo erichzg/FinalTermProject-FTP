@@ -9,7 +9,7 @@ int check_or_create_account(char * username, char * password, int server_socket,
 void client(char * serverIP){
   char username[BUFFER_SIZE];
   char password[BUFFER_SIZE];
-  int userId = 0;
+  int userId = -1;
 
   int server_socket;
   char buffer[BUFFER_SIZE];
@@ -21,49 +21,52 @@ void client(char * serverIP){
 
 
     //login code***
-    printf("Do you have an account yet?(y/n)\n");
+    printf("Do you have an account yet?(y/n): ");
     memset(buffer, 0, sizeof(buffer));
     fgets(buffer, 256, stdin);
     *strchr(buffer, '\n') = 0;
+
+    printf("Please no colons in your username or password.\n");
     if(!strcmp(buffer,"y") || !strcmp(buffer, "Y")){
-        while(!userId) {
-            printf("Username: \n");
+        while(userId < 0) {
+            printf("Username: ");
             fgets(username, 256, stdin);
             *strchr(username, '\n') = 0;
 
-            printf("Password: \n"); //make this hidden***
+            printf("Password: "); //make this hidden***
             fgets(password, 256, stdin);
             *strchr(password, '\n') = 0;
 
             userId = check_or_create_account(username, password,server_socket,"CHECK");
-            if (!userId) {
+            if (userId < 0) {
                 printf("Error logging in. Please try again\n");
             }
         }
     }
-    else if(!strcmp(buffer, "n") || !strcmp(buffer, "Y")){
-        while(!userId) {
-            printf("Username: \n");
+    else if(!strcmp(buffer, "n") || !strcmp(buffer, "N")){
+        while(userId < 0) {
+            printf("Username: ");
             fgets(username, 256, stdin);
             *strchr(username, '\n') = 0;
 
-            printf("Password: \n"); //make this hidden***
+            printf("Password: "); //make this hidden***
             fgets(password, 256, stdin);
             *strchr(password, '\n') = 0;
 
             userId = check_or_create_account(username, password,server_socket,"CREAT");
-            if (!userId) {
-                printf("Username already exists please try again\n");
+            if (userId < 0) {
+                printf("Error creating account please try again\n");
             }
         }
-        memset(password, 0, sizeof(password));
-        memset(username, 0, sizeof(username));
     }
     else{
         printf("You did not type y or n. Try again next time.\n");
         close(server_socket);
         exit(0);
     }
+    memset(password, 0, sizeof(password));
+    memset(username, 0, sizeof(username));
+
 
     while (1) {
         printf("\nWould you like to push or pull (a file), view available files in the FTP, or exit? (push/pull/view/exit): ");
@@ -187,34 +190,54 @@ void error_check( int i, char *s ) {
 }
 
 //returns userID if everything checks out
+//returns -1 if failure logging in
 //protocol is either CHECK or CREAT
 int check_or_create_account(char * username, char * password, int server_socket, char * protocol){
     char * buffer = (char *) malloc(256 * sizeof(char));
     int retInt = 0;
     char * encrypted = crypt(password, "ab");
-    //check file of encrypted passwords***
+
+    //checking if passwords and usernames colons
+    if(strchr(username, ':') || strchr(password, ':')){
+        printf("Error: username and password cannot contain colons.\n");
+        return -1;
+    }
 
     write(server_socket, protocol, sizeof(protocol)); //sends either CHECK or CREAT
-    wait_response("1", server_socket);
+    if(wait_response("1", server_socket) < 0)
+        return -1;
 
     write(server_socket, username, sizeof(username)); //sending username
-    wait_response("2", server_socket);
+    if(wait_response("2", server_socket) < 0)
+        return -1;
 
     write(server_socket, encrypted, sizeof(encrypted)); //sending encrypted password*/
-    wait_response("3", server_socket);
+    if(wait_response("3", server_socket) < 0)
+        return -1;
 
     read(server_socket, &retInt, sizeof(retInt)); //reading userId
     free(buffer);
     return retInt;
 }
 
-//waits until it recieves message as response
-void wait_response(char * message, int server_socket){
+//waits until it receives expected message as response
+//returns -1 if error occurs while waiting(error message sent)
+//returns 0 upon success
+int wait_response(char * message, int server_socket){
     char * buffer = (char *) malloc(256 * sizeof(char));
 
-    while(strcmp(buffer,message))
-        read(server_socket, buffer, sizeof(buffer));
+    while(strcmp(buffer,message)) {
+        read(server_socket, buffer, sizeof(char)*BUFFER_SIZE);
+
+        //if it gets error message instead of confirmation
+        if(strstr(buffer,ERROR_RESPONSE)) {
+            read(server_socket, buffer, sizeof(char)*BUFFER_SIZE); //reading follow up error message
+            printf("%s", buffer);
+            return -1;
+        }
+    }
     free(buffer);
+    return 0;
 }
 
 //returns number of bytes in s up to a NULL char
