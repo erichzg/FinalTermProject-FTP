@@ -118,7 +118,7 @@ void client(char * serverIP){
             printf("\nWhere would you like the file contents to be pulled?(enter a path to file): ");
             fgets(filePath, sizeof(filePath), stdin);
             *strchr(filePath, '\n') = 0;
-            fd = open(filePath, O_CREAT|O_WRONLY|O_TRUNC);
+            fd = open(filePath, O_CREAT|O_WRONLY|O_TRUNC, 0664);
             //writing into fd up to NULL
             write(fd, fileContent, num_non_null_bytes(fileContent));
             close(fd);

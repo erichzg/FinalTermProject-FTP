@@ -57,7 +57,7 @@ void subserver(int client_socket) {
         //file transfer code ***
         strcpy(filePath, "./fileDir/");
         strcat(filePath,file);
-        fd = open(filePath, O_CREAT|O_WRONLY|O_TRUNC);
+        fd = open(filePath, O_CREAT|O_WRONLY|O_TRUNC, 0664);
         //receiving file contents
         read(client_socket, fileContent, sizeof(fileContent));
         print_packet(fileContent);
