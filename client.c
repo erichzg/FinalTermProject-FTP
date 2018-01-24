@@ -44,7 +44,7 @@ void client(char * serverIP){
         }
     }
     else if(!strcmp(buffer, "n") || !strcmp(buffer, "N")){
-        printf("Please no colons or semicolons in your username or password.\n");
+        printf("Please no colons, semicolons, or pipes in your username or password.\n");
         while(logged_in < 0) {
             printf("Username: ");
             fgets(username, 256, stdin);
@@ -82,21 +82,22 @@ void client(char * serverIP){
             fgets(file, sizeof(file), stdin);
             *strchr(file, '\n') = 0;
             write(server_socket, file, sizeof(file)); //file name sent
-            wait_response("2", server_socket);
 
-            //file transfer
-            printf("\nWhat is the path to this file?: ");
-            fgets(filePath, sizeof(filePath), stdin);
-            *strchr(filePath, '\n') = 0;
-            //accessing file contents
-            if((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
-                handle_error();
-            read(fd, fileContent, sizeof(fileContent));
-            close(fd);
-            //sending file contents up to NULL
-            write(server_socket, fileContent, num_non_null_bytes(fileContent));
+            if(!wait_response("2", server_socket)){//wait for confirmation to send file contents
+                //file transfer
+                printf("\nWhat is the path to this file?: ");
+                fgets(filePath, sizeof(filePath), stdin);
+                *strchr(filePath, '\n') = 0;
+                //accessing file contents
+                if ((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
+                    handle_error();
+                read(fd, fileContent, sizeof(fileContent));
+                close(fd);
+                //sending file contents up to NULL
+                write(server_socket, fileContent, num_non_null_bytes(fileContent));
+                printf("Pushed from '%s' to '%s'\n", filePath, file); //***
+            }
 
-            printf("Pushed from '%s' to '%s'\n", filePath,file);
 
         }
         else if(!strcmp("pull",buffer)){//pull file code
@@ -195,8 +196,10 @@ void error_check( int i, char *s ) {
 int check_or_create_account(char * username, char * password, int server_socket, char * protocol){
 
     //checking if passwords or usernames have colons or semicolons
-    if(strchr(username, ':') || strchr(password, ':') || strchr(password, ';') || strchr(username, ';')){
-        printf("Error: Username and password cannot contain colons or semicolons.\n");
+    if(strchr(username, ':') || strchr(password, ':')
+       || strchr(password, ';') || strchr(username, ';')
+       || strchr(password, '|') || strchr(username, '|')){
+        printf("Error: Username and password cannot contain colons, semicolons, or pipes.\n");
         return -1;
     }
 

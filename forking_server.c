@@ -34,15 +34,17 @@ void subserver(int client_socket) {
     char filePath[BUFFER_SIZE];
     char fileContent[PACKET_SIZE];
     char filesInDir[PACKET_SIZE];
+    char perm_desc[PACKET_SIZE]; //<file>;<username>:
+    char perms_content[LOGFILE_SIZE]; //all permissions
+    char *init_file_pos; //pointer to where a file(and permissions begin)
     //concerning login
-    char username[BUFFER_SIZE];
+    char username[BUFFER_SIZE]; //set to username + : at login stage and used for verifying permissions while logged in
     char enc_password[BUFFER_SIZE];
     char * double_enc; // double encrypted password
     char expected_password[BUFFER_SIZE]; //also double encrypted
     char *init_username_pos; //pointer to where username in question begins
-    char account_desc[PACKET_SIZE]; //contains both password and username + wiggle room
+    char account_desc[PACKET_SIZE]; //<username>:<password>;
     char accounts_content[LOGFILE_SIZE];
-    int fd;
     int logged_in = -1;//0 if user is logged in
 
   while (read(client_socket, buffer, sizeof(buffer))) {
@@ -52,20 +54,46 @@ void subserver(int client_socket) {
 
         read(client_socket, file, sizeof(file)); //receives file name
         print_packet(file);
-        write(client_socket, "2", sizeof("2")); //responds
 
         //file transfer code ***
         strcpy(filePath, "./fileDir/");
         strcat(filePath,file);
-        fd = open(filePath, O_CREAT|O_WRONLY|O_TRUNC, 0664);
-        //receiving file contents
-        read(client_socket, fileContent, sizeof(fileContent));
-        print_packet(fileContent);
-        //writing into fd up to NULL
-        write(fd, fileContent, num_non_null_bytes(fileContent));
-        close(fd);
-        printf("[Server]: pushed to '%s'\n", file);
+        strcat(file, ";"); //adds ; to the end of file name
+        int fd;//of file being pushed into(initialized without permission to push)
+        int push_perm_fd = open("./push_perm.txt", O_CREAT|O_RDWR|O_APPEND, 0664); //to work with push permissions
 
+        if((fd = open(filePath, O_CREAT|O_EXCL|O_WRONLY, 0664))>=0){//if file doesn't exist yet
+            sprintf(perm_desc, "%s%s|%c",file,username,'\0'); //username/file already have correct endings
+            write(push_perm_fd, perm_desc, num_non_null_bytes(perm_desc));//writes new permission at end
+            write(client_socket,"2",sizeof("2"));//confirms push access
+        }
+        else{//file exists (push permissions need to be verified)
+            read(push_perm_fd, perms_content, sizeof(perms_content));
+            init_file_pos = strstr(perms_content,file); //guaranteed to be file because of ; ending
+            strncpy(perm_desc,                      //copy into description of permission...
+                    init_file_pos,     //starting from the beginning of description...
+                    sizeof(char)*(int)(strchr(init_file_pos,'|')-init_file_pos)); //to the end of the description
+            if(strstr(perm_desc,username)){//if username found in permissions
+                fd = open(filePath, O_WRONLY|O_TRUNC, 0664);
+                write(client_socket,"2",sizeof("2"));//confirms push access
+            }
+            else{//push access denied
+                fd = -1;
+                write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
+                write(client_socket,"ERROR: Push access denied",sizeof("ERROR: Push access denied"));
+            }
+        }
+        close(push_perm_fd);
+
+        if(fd >= 0){
+            //receiving file contents
+            read(client_socket, fileContent, sizeof(fileContent));
+            print_packet(fileContent);
+            //writing into fd up to NULL
+            write(fd, fileContent, num_non_null_bytes(fileContent));
+            close(fd);
+            printf("[Server]: pushed to '%s'\n", file);
+        }
     }
     else if(!strcmp(buffer,"PULL") && !logged_in){ //dealing with a pull request
         write(client_socket, "1", sizeof("1")); //responds to client
@@ -78,6 +106,7 @@ void subserver(int client_socket) {
         strcpy(filePath, "./fileDir/");
         strcat(filePath,file);
         //accessing file contents
+        int fd;//to store fileContent
         if((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
             handle_error();
         read(fd, fileContent, sizeof(fileContent));
@@ -91,7 +120,7 @@ void subserver(int client_socket) {
     }
     else if(!strcmp(buffer,"VIEW") && !logged_in){
         //VIEWING CODE ***
-        write(client_socket, filesInDir, sizeof(fileContent));
+        write(client_socket, filesInDir, sizeof(filesInDir));
     }
     else if(!strcmp(buffer,"CHECK")){
 
@@ -103,7 +132,7 @@ void subserver(int client_socket) {
         read(client_socket, enc_password, sizeof(enc_password));
 
         //opens passwords file
-        fd = open("./accounts.txt", O_RDONLY|O_APPEND, 0644);
+        int fd = open("./accounts.txt", O_RDONLY, 0644);
         read(fd, accounts_content, sizeof(accounts_content));
 
         //checks if username/password are correct
@@ -146,7 +175,7 @@ void subserver(int client_socket) {
         read(client_socket, enc_password, sizeof(enc_password));
 
         //opens passwords file (creates it when first user creates account)
-        fd = open("./accounts.txt", O_RDWR|O_CREAT|O_APPEND, 0644);
+        int fd = open("./accounts.txt", O_RDWR|O_CREAT|O_APPEND, 0644);
         read(fd, accounts_content, sizeof(accounts_content));
         //checks if username already exists(with colon at end to only look for usernames in accounts file)
         strcat(username, ":");

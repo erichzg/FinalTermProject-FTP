@@ -22,7 +22,7 @@
 #define NETWORKING_H
 
 #define BUFFER_SIZE 256
-#define PORT "9003"
+#define PORT "9004"
 #define TEST_IP "127.0.0.1"
 #define PACKET_SIZE 1024 //number of bytes in each file packet
 #define LOGFILE_SIZE 32768
