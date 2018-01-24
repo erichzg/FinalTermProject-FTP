@@ -26,7 +26,8 @@ void client(char * serverIP){
     printf("Do you have an account yet?(y/n)\n");
     memset(buffer, 0, sizeof(buffer));
     fgets(buffer, 256, stdin);
-    if(buffer[0] == 'y'){
+    *strchr(buffer, '\n') = 0;
+    if(!strcmp(buffer,"y") || !strcmp(buffer, "Y")){
         while(!userId) {
             printf("Username: \n");
             fgets(username, 256, stdin);
@@ -42,7 +43,7 @@ void client(char * serverIP){
             }
         }
     }
-    else{
+    else if(!strcmp(buffer, "n") || !strcmp(buffer, "Y")){
         while(!userId) {
             printf("Username: \n");
             fgets(username, 256, stdin);
@@ -57,22 +58,32 @@ void client(char * serverIP){
                 printf("Username already exists please try again\n");
             }
         }
+        memset(password, 0, sizeof(password));
+        memset(username, 0, sizeof(username));
+    }
+    else{
+        printf("You did not type y or n. Try again next time.\n");
+        close(server_socket);
+        exit(0);
     }
 
     while (1) {
-        printf("Would you like to push or pull (a file) or view available files in the FTP? (push/pull/view)\n");
+        printf("Would you like to push or pull (a file), view available files in the FTP, or exit? (push/pull/view/exit)\n");
         fgets(buffer, sizeof(buffer), stdin);
         *strchr(buffer, '\n') = 0;
         if(!strcmp("push",buffer)){ //push file code
-            printf("What is the name of the file you are pushing?\n");
+            //sending push request
+            write(server_socket, "PUSH", sizeof("PUSH")); //push request sent
+            wait_response("1", server_socket);
+
+            //sending file name
+            printf("What is the name of the file you are pushing into?(if it doesnt exist yet one will be created)\n");
             fgets(file, sizeof(file), stdin);
             *strchr(file, '\n') = 0;
-            write(server_socket, "PUSH", sizeof("PUSH")); //push request sent
-            read(server_socket, buffer, sizeof(buffer));
             write(server_socket, file, sizeof(file)); //file name sent
-            read(server_socket, buffer, sizeof(buffer));
+            wait_response("2", server_socket);
 
-            //file transfer code ***
+            //file transfer
             printf("What is the path to this file?\n");
             fgets(filePath, sizeof(filePath), stdin);
             *strchr(filePath, '\n') = 0;
@@ -80,38 +91,46 @@ void client(char * serverIP){
             if((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
                 handle_error();
             read(fd, fileContent, sizeof(fileContent));
+            close(fd);
             //sending file contents
             write(server_socket, fileContent, sizeof(fileContent));
-            close(fd);
+
         }
         else if(!strcmp("pull",buffer)){//pull file code
+            //sending pull request
+            write(server_socket, "PULL", sizeof("PULL")); //pull request sent
+            wait_response("1", server_socket);
+
+            //sending file name
             printf("What is the name of the file you are pulling?\n");
             fgets(file, sizeof(file), stdin);
             *strchr(file, '\n') = 0;
-            write(server_socket, "PULL", sizeof("PULL")); //pull request sent
-            read(server_socket, buffer, sizeof(buffer));
             write(server_socket, file, sizeof(file)); //file name sent
-            read(server_socket, buffer, sizeof(buffer));
+            wait_response("2", server_socket);
 
-            //file transfer code ***
+            //recieving file contents
+            read(server_socket, fileContent, sizeof(fileContent));
+            //storing file contents in client-side file
             printf("Where would you like the file contents to be pulled?(enter a path to file)\n");
             fgets(filePath, sizeof(filePath), stdin);
             *strchr(filePath, '\n') = 0;
             fd = open(filePath, O_CREAT|O_WRONLY);
-            //recieving file contents
-            read(server_socket, fileContent, sizeof(fileContent));
-            //writing into fd
-            write(fd, fileContent, sizeof(fileContent));
+            write(fd, fileContent, sizeof(fileContent)); //writing into fd
             close(fd);
         }
-        else if(!strcmp("view",buffer)){
+        else if(!strcmp("view",buffer)) {
             write(server_socket, "VIEW", sizeof("VIEW")); //view request sent
 
             //VIEWING CODE ***
             read(server_socket, stdout, sizeof(fileContent)); //get this to read to stdout***
         }
+        else if(!strcmp("exit",buffer)) {
+            printf("Thank you for using FTP. Goodbye\n");
+            close(server_socket);
+            exit(0);
+        }
         else{
-            printf("Please type in 'push', 'pull', or 'view'.");
+            printf("Please type in 'push', 'pull', 'view', or 'exit'.");
         }
   }
 }
@@ -166,8 +185,8 @@ void error_check( int i, char *s ) {
 //protocol is either CHECK or CREAT
 int check_or_create_account(char * username, char * password, int server_socket, char * protocol){
     char * buffer = (char *) malloc(256 * sizeof(char));
-    int * retInt = (int *) malloc(sizeof(int));
-    char * encrypted = password;//crypt(password, "ab");
+    int retInt = 0;
+    char * encrypted = crypt(password, "ab");
     //check file of encrypted passwords***
 
     write(server_socket, protocol, sizeof(protocol)); //sends either CHECK or CREAT
@@ -179,8 +198,9 @@ int check_or_create_account(char * username, char * password, int server_socket,
     write(server_socket, encrypted, sizeof(encrypted)); //sending encrypted password*/
     wait_response("3", server_socket);
 
-    read(server_socket, retInt, sizeof(retInt)); //reading userId
-    return *retInt;
+    read(server_socket, &retInt, sizeof(retInt)); //reading userId
+    free(buffer);
+    return retInt;
 }
 
 //waits until it recieves message as response

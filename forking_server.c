@@ -41,10 +41,11 @@ void subserver(int client_socket) {
   while (read(client_socket, buffer, sizeof(buffer))) {
 
     if(!strcmp(buffer, "PUSH")){ //dealing with push request
-        write(client_socket, buffer, sizeof(buffer)); //responds to client
-        read(client_socket, file, sizeof(file)); //recieves file name
+        write(client_socket, "1", sizeof("1")); //responds to client
+
+        read(client_socket, file, sizeof(file)); //receives file name
         print_packet(file);
-        write(client_socket, buffer, sizeof(buffer)); //responds
+        write(client_socket, "2", sizeof("2")); //responds
 
         //file transfer code ***
         strcpy(filePath, "./fileDir/");
@@ -58,10 +59,11 @@ void subserver(int client_socket) {
         close(fd);
     }
     else if(!strcmp(buffer,"PULL")){ //dealing with a pull request
-        write(client_socket, buffer, sizeof(buffer)); //responds to client
-        read(client_socket, file, sizeof(file)); //recieves file name
+        write(client_socket, "1", sizeof("1")); //responds to client
+
+        read(client_socket, file, sizeof(file)); //receives file name
         print_packet(file);
-        write(client_socket, buffer, sizeof(buffer)); //responds
+        write(client_socket, "2", sizeof("2")); //responds
 
         //file transfer code ***
         strcpy(filePath, "./fileDir/");
@@ -70,7 +72,6 @@ void subserver(int client_socket) {
         if((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
             handle_error();
         read(fd, fileContent, sizeof(fileContent));
-        print_packet(fileContent);
 
         //sending file contents
         write(client_socket, fileContent, sizeof(fileContent));
@@ -108,7 +109,6 @@ void subserver(int client_socket) {
 
         write(client_socket, "2", sizeof("2"));
         read(client_socket, enc_password, sizeof(enc_password));
-        print_packet(enc_password);
 
         //ACCOUNT CREATING CODE ***
 

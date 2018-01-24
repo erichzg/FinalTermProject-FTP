@@ -18,7 +18,7 @@
 #define NETWORKING_H
 
 #define BUFFER_SIZE 256
-#define PORT "9002"
+#define PORT "9003"
 #define TEST_IP "127.0.0.1"
 //#define CHECK_PASSWD 27
 //#define CREAT_ACCONT 28
