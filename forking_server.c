@@ -9,7 +9,7 @@ void handle_error(){
     exit(1);
 }
 void print_packet(char *s){
-    printf("[Server]: received %s\n", s);
+    printf("[Server]: received [%s]\n", s);
 }
 
 int forking_server() {
@@ -24,7 +24,7 @@ int forking_server() {
     f = fork();
     if (f == 0)
       subserver(client_socket);
-    // does parent need to close socket? ***  
+    // does parent need to close socket? ***
   }
 }
 
@@ -34,6 +34,8 @@ void subserver(int client_socket) {
     char filePath[BUFFER_SIZE];
     char fileContent[1024];
     char filesInDir[1024];
+    char username[BUFFER_SIZE];
+    char enc_password[BUFFER_SIZE];
     int fd;
 
   while (read(client_socket, buffer, sizeof(buffer))) {
@@ -69,6 +71,7 @@ void subserver(int client_socket) {
             handle_error();
         read(fd, fileContent, sizeof(fileContent));
         print_packet(fileContent);
+
         //sending file contents
         write(client_socket, fileContent, sizeof(fileContent));
         close(fd);
@@ -78,13 +81,39 @@ void subserver(int client_socket) {
         write(client_socket, filesInDir, sizeof(fileContent));
     }
     else if(!strcmp(buffer,"CHECK")){
-        //PASSWORD CHECKING CODE ***
         int userId = 1;
+
+        //accessing username/ encrypted password
+        write(client_socket, "1", sizeof("1"));
+        read(client_socket, username, sizeof(username));
+        print_packet(username);
+
+        write(client_socket, "2", sizeof("2"));
+        read(client_socket, enc_password, sizeof(enc_password));
+        print_packet(enc_password);
+
+        //ACCOUNT CHECKING CODE ***
+
+        //sends back userId
+        write(client_socket, "3", sizeof("3"));
         write(client_socket, &userId, sizeof(userId));
     }
-    else if(!strcmp(buffer,"CREATE")){
-        //ACCOUNT CREATING CODE ***
+    else if(!strcmp(buffer,"CREAT")){
         int userId = 1;
+
+        //accessing username/ encrypted password
+        write(client_socket, "1", sizeof("1"));
+        read(client_socket, username, sizeof(username));
+        print_packet(username);
+
+        write(client_socket, "2", sizeof("2"));
+        read(client_socket, enc_password, sizeof(enc_password));
+        print_packet(enc_password);
+
+        //ACCOUNT CREATING CODE ***
+
+        //sends back userId
+        write(client_socket, "3", sizeof("3"));
         write(client_socket, &userId, sizeof(userId));
     }
   }//end read loop

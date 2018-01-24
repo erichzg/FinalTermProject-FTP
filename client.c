@@ -5,6 +5,7 @@
 #include <crypt.h>
 
 int check_or_create_account(char * username, char * password, int server_socket, char * protocol);
+void wait_response(char * message, int server_socket);
 
 //main client connection
 void client(char * serverIP){
@@ -29,8 +30,12 @@ void client(char * serverIP){
         while(!userId) {
             printf("Username: \n");
             fgets(username, 256, stdin);
+            *strchr(username, '\n') = 0;
+
             printf("Password: \n"); //make this hidden***
             fgets(password, 256, stdin);
+            *strchr(password, '\n') = 0;
+
             userId = check_or_create_account(username, password,server_socket,"CHECK");
             if (!userId) {
                 printf("Error logging in. Please try again\n");
@@ -39,10 +44,14 @@ void client(char * serverIP){
     }
     else{
         while(!userId) {
-            printf("Please create a username: \n");
+            printf("Username: \n");
             fgets(username, 256, stdin);
-            printf("Please type in a password: \n"); //make this hidden***
+            *strchr(username, '\n') = 0;
+
+            printf("Password: \n"); //make this hidden***
             fgets(password, 256, stdin);
+            *strchr(password, '\n') = 0;
+
             userId = check_or_create_account(username, password,server_socket,"CREAT");
             if (!userId) {
                 printf("Username already exists please try again\n");
@@ -162,10 +171,23 @@ int check_or_create_account(char * username, char * password, int server_socket,
     //check file of encrypted passwords***
 
     write(server_socket, protocol, sizeof(protocol)); //sends either CHECK or CREAT
-/*    read(server_socket, buffer, sizeof(buffer));
+    wait_response("1", server_socket);
+
     write(server_socket, username, sizeof(username)); //sending username
-    read(server_socket, buffer, sizeof(buffer));
+    wait_response("2", server_socket);
+
     write(server_socket, encrypted, sizeof(encrypted)); //sending encrypted password*/
-    read(server_socket, retInt, sizeof(retInt)); //sending verification in the form of userId
+    wait_response("3", server_socket);
+
+    read(server_socket, retInt, sizeof(retInt)); //reading userId
     return *retInt;
+}
+
+//waits until it recieves message as response
+void wait_response(char * message, int server_socket){
+    char * buffer = (char *) malloc(256 * sizeof(char));
+
+    while(strcmp(buffer,message))
+        read(server_socket, buffer, sizeof(buffer));
+    free(buffer);
 }
