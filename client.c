@@ -1,11 +1,9 @@
 #include "networking.h"
-#define _XOPEN_SOURCE       /* See feature_test_macros(7) */
-#include <unistd.h>
-#define _GNU_SOURCE         /* See feature_test_macros(7) */
-#include <crypt.h>
+
 
 int check_or_create_account(char * username, char * password, int server_socket, char * protocol);
-void wait_response(char * message, int server_socket);
+
+
 
 //main client connection
 void client(char * serverIP){
@@ -17,7 +15,7 @@ void client(char * serverIP){
   char buffer[BUFFER_SIZE];
   char file[BUFFER_SIZE];
   char filePath[BUFFER_SIZE];
-  char fileContent[1024];
+  char fileContent[PACKET_SIZE];
   int fd;
   server_socket = client_setup(serverIP);
 
@@ -68,7 +66,7 @@ void client(char * serverIP){
     }
 
     while (1) {
-        printf("Would you like to push or pull (a file), view available files in the FTP, or exit? (push/pull/view/exit)\n");
+        printf("\nWould you like to push or pull (a file), view available files in the FTP, or exit? (push/pull/view/exit): ");
         fgets(buffer, sizeof(buffer), stdin);
         *strchr(buffer, '\n') = 0;
         if(!strcmp("push",buffer)){ //push file code
@@ -77,14 +75,14 @@ void client(char * serverIP){
             wait_response("1", server_socket);
 
             //sending file name
-            printf("What is the name of the file you are pushing into?(if it doesnt exist yet one will be created)\n");
+            printf("\nWhat is the name of the file you are pushing into?(if it doesnt exist yet one will be created): ");
             fgets(file, sizeof(file), stdin);
             *strchr(file, '\n') = 0;
             write(server_socket, file, sizeof(file)); //file name sent
             wait_response("2", server_socket);
 
             //file transfer
-            printf("What is the path to this file?\n");
+            printf("\nWhat is the path to this file?: ");
             fgets(filePath, sizeof(filePath), stdin);
             *strchr(filePath, '\n') = 0;
             //accessing file contents
@@ -92,8 +90,10 @@ void client(char * serverIP){
                 handle_error();
             read(fd, fileContent, sizeof(fileContent));
             close(fd);
-            //sending file contents
-            write(server_socket, fileContent, sizeof(fileContent));
+            //sending file contents up to NULL
+            write(server_socket, fileContent, num_non_null_bytes(fileContent));
+
+            printf("Pushed from '%s' to '%s'\n", filePath,file);
 
         }
         else if(!strcmp("pull",buffer)){//pull file code
@@ -102,21 +102,26 @@ void client(char * serverIP){
             wait_response("1", server_socket);
 
             //sending file name
-            printf("What is the name of the file you are pulling?\n");
+            printf("\nWhat is the name of the file you are pulling?: ");
             fgets(file, sizeof(file), stdin);
             *strchr(file, '\n') = 0;
             write(server_socket, file, sizeof(file)); //file name sent
             wait_response("2", server_socket);
 
-            //recieving file contents
+            //receiving file contents
+            write(server_socket, "3", sizeof("3"));//responds with a ready to read signal
             read(server_socket, fileContent, sizeof(fileContent));
             //storing file contents in client-side file
-            printf("Where would you like the file contents to be pulled?(enter a path to file)\n");
+            printf("\nWhere would you like the file contents to be pulled?(enter a path to file): ");
             fgets(filePath, sizeof(filePath), stdin);
             *strchr(filePath, '\n') = 0;
-            fd = open(filePath, O_CREAT|O_WRONLY);
-            write(fd, fileContent, sizeof(fileContent)); //writing into fd
+            fd = open(filePath, O_CREAT|O_WRONLY|O_TRUNC);
+            //writing into fd up to NULL
+            write(fd, fileContent, num_non_null_bytes(fileContent));
             close(fd);
+
+            printf("Pulled from '%s' to '%s'\n", file,filePath);
+
         }
         else if(!strcmp("view",buffer)) {
             write(server_socket, "VIEW", sizeof("VIEW")); //view request sent
@@ -210,4 +215,15 @@ void wait_response(char * message, int server_socket){
     while(strcmp(buffer,message))
         read(server_socket, buffer, sizeof(buffer));
     free(buffer);
+}
+
+//returns number of bytes in s up to a NULL char
+//i.e. the number of bytes of meaningful information
+int num_non_null_bytes(char* s){
+    char * nul_pos = strchr(s,'\0');
+    //checks if NULL is actually in the string
+    if(nul_pos != NULL)
+        return sizeof(char)* (int)(nul_pos - s);
+    else
+        return sizeof(char)*PACKET_SIZE;
 }

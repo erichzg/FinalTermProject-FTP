@@ -32,10 +32,11 @@ void subserver(int client_socket) {
   char buffer[BUFFER_SIZE];
     char file[BUFFER_SIZE];
     char filePath[BUFFER_SIZE];
-    char fileContent[1024];
-    char filesInDir[1024];
+    char fileContent[PACKET_SIZE];
+    char filesInDir[PACKET_SIZE];
     char username[BUFFER_SIZE];
     char enc_password[BUFFER_SIZE];
+    char * double_enc; // double encrypted password
     int fd;
 
   while (read(client_socket, buffer, sizeof(buffer))) {
@@ -50,13 +51,15 @@ void subserver(int client_socket) {
         //file transfer code ***
         strcpy(filePath, "./fileDir/");
         strcat(filePath,file);
-        fd = open(filePath, O_CREAT|O_WRONLY);
-        //recieving file contents
+        fd = open(filePath, O_CREAT|O_WRONLY|O_TRUNC);
+        //receiving file contents
         read(client_socket, fileContent, sizeof(fileContent));
         print_packet(fileContent);
-        //writing into fd
-        write(fd, fileContent, sizeof(fileContent));
+        //writing into fd up to NULL
+        write(fd, fileContent, num_non_null_bytes(fileContent));
         close(fd);
+        printf("[Server]: pushed to '%s'\n", file);
+
     }
     else if(!strcmp(buffer,"PULL")){ //dealing with a pull request
         write(client_socket, "1", sizeof("1")); //responds to client
@@ -73,9 +76,12 @@ void subserver(int client_socket) {
             handle_error();
         read(fd, fileContent, sizeof(fileContent));
 
-        //sending file contents
-        write(client_socket, fileContent, sizeof(fileContent));
+        //sending file contents up to NULL
+        wait_response("3", client_socket);
+        write(client_socket, fileContent, num_non_null_bytes(fileContent));
         close(fd);
+        printf("[Server]: pulled from '%s'\n", file);
+
     }
     else if(!strcmp(buffer,"VIEW")){
         //VIEWING CODE ***
@@ -91,7 +97,8 @@ void subserver(int client_socket) {
 
         write(client_socket, "2", sizeof("2"));
         read(client_socket, enc_password, sizeof(enc_password));
-        print_packet(enc_password);
+        double_enc = crypt(enc_password, "bc");
+
 
         //ACCOUNT CHECKING CODE ***
 
@@ -109,6 +116,8 @@ void subserver(int client_socket) {
 
         write(client_socket, "2", sizeof("2"));
         read(client_socket, enc_password, sizeof(enc_password));
+        double_enc = crypt(enc_password, "bc");
+
 
         //ACCOUNT CREATING CODE ***
 
