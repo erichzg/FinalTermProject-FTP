@@ -9,7 +9,7 @@ int check_or_create_account(char * username, char * password, int server_socket,
 void client(char * serverIP){
   char username[BUFFER_SIZE];
   char password[BUFFER_SIZE];
-  int userId = -1;
+  int logged_in = -1;//0 once client is logged in
 
   int server_socket;
   char buffer[BUFFER_SIZE];
@@ -17,10 +17,11 @@ void client(char * serverIP){
   char filePath[BUFFER_SIZE];
   char fileContent[PACKET_SIZE];
   int fd;
+
   server_socket = client_setup(serverIP);
 
 
-    //login code***
+    //login code
     printf("Do you have an account yet?(y/n): ");
     memset(buffer, 0, sizeof(buffer));
     fgets(buffer, 256, stdin);
@@ -28,7 +29,7 @@ void client(char * serverIP){
 
     printf("Please no colons in your username or password.\n");
     if(!strcmp(buffer,"y") || !strcmp(buffer, "Y")){
-        while(userId < 0) {
+        while(logged_in < 0) {
             printf("Username: ");
             fgets(username, 256, stdin);
             *strchr(username, '\n') = 0;
@@ -37,14 +38,14 @@ void client(char * serverIP){
             fgets(password, 256, stdin);
             *strchr(password, '\n') = 0;
 
-            userId = check_or_create_account(username, password,server_socket,"CHECK");
-            if (userId < 0) {
+            logged_in = check_or_create_account(username, password,server_socket,"CHECK");
+            if (logged_in < 0) {
                 printf("Error logging in. Please try again\n");
             }
         }
     }
     else if(!strcmp(buffer, "n") || !strcmp(buffer, "N")){
-        while(userId < 0) {
+        while(logged_in < 0) {
             printf("Username: ");
             fgets(username, 256, stdin);
             *strchr(username, '\n') = 0;
@@ -53,8 +54,8 @@ void client(char * serverIP){
             fgets(password, 256, stdin);
             *strchr(password, '\n') = 0;
 
-            userId = check_or_create_account(username, password,server_socket,"CREAT");
-            if (userId < 0) {
+            logged_in = check_or_create_account(username, password,server_socket,"CREAT");
+            if (logged_in < 0) {
                 printf("Error creating account please try again\n");
             }
         }
@@ -189,7 +190,7 @@ void error_check( int i, char *s ) {
     }
 }
 
-//returns userID if everything checks out
+//returns 0 if everything checks out
 //returns -1 if failure logging in
 //protocol is either CHECK or CREAT
 int check_or_create_account(char * username, char * password, int server_socket, char * protocol){
@@ -211,13 +212,12 @@ int check_or_create_account(char * username, char * password, int server_socket,
     if(wait_response("2", server_socket) < 0)
         return -1;
 
-    write(server_socket, encrypted, sizeof(encrypted)); //sending encrypted password*/
+    write(server_socket, encrypted, sizeof(encrypted)); //sending encrypted password
     if(wait_response("3", server_socket) < 0)
         return -1;
 
-    read(server_socket, &retInt, sizeof(retInt)); //reading userId
     free(buffer);
-    return retInt;
+    return 0;
 }
 
 //waits until it receives expected message as response

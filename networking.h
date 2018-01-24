@@ -26,7 +26,7 @@
 #define TEST_IP "127.0.0.1"
 #define PACKET_SIZE 1024 //number of bytes in each file packet
 #define LOGFILE_SIZE 32768
-#define ERROR_RESPONSE "0"
+#define ERROR_RESPONSE "-1"
 
 
 void error_check(int i, char *s);

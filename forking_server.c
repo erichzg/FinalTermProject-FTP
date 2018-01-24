@@ -41,10 +41,11 @@ void subserver(int client_socket) {
     char account_desc[PACKET_SIZE]; //contains both password and username + wiggle room
     char accounts_content[LOGFILE_SIZE];
     int fd;
+    int logged_in = -1;//0 if user is logged in
 
   while (read(client_socket, buffer, sizeof(buffer))) {
 
-    if(!strcmp(buffer, "PUSH")){ //dealing with push request
+    if(!strcmp(buffer, "PUSH") && !logged_in){ //dealing with push request
         write(client_socket, "1", sizeof("1")); //responds to client
 
         read(client_socket, file, sizeof(file)); //receives file name
@@ -64,7 +65,7 @@ void subserver(int client_socket) {
         printf("[Server]: pushed to '%s'\n", file);
 
     }
-    else if(!strcmp(buffer,"PULL")){ //dealing with a pull request
+    else if(!strcmp(buffer,"PULL") && !logged_in){ //dealing with a pull request
         write(client_socket, "1", sizeof("1")); //responds to client
 
         read(client_socket, file, sizeof(file)); //receives file name
@@ -86,12 +87,11 @@ void subserver(int client_socket) {
         printf("[Server]: pulled from '%s'\n", file);
 
     }
-    else if(!strcmp(buffer,"VIEW")){
+    else if(!strcmp(buffer,"VIEW") && !logged_in){
         //VIEWING CODE ***
         write(client_socket, filesInDir, sizeof(fileContent));
     }
     else if(!strcmp(buffer,"CHECK")){
-        int userId = 1;
 
         //accessing username/ encrypted password
         write(client_socket, "1", sizeof("1"));
@@ -105,12 +105,10 @@ void subserver(int client_socket) {
 
         //ACCOUNT CHECKING CODE ***
 
-        //sends back userId
+        //sends back final confirmation
         write(client_socket, "3", sizeof("3"));
-        write(client_socket, &userId, sizeof(userId));
     }
     else if(!strcmp(buffer,"CREAT")){
-        int userId = 1;
 
         //accessing username/ encrypted password
         write(client_socket, "1", sizeof("1"));
@@ -137,9 +135,9 @@ void subserver(int client_socket) {
             write(fd, account_desc, num_non_null_bytes(account_desc));
             close(fd);
 
-            //sends back userId
+            //sends back final confirmation and "logs in" client
+            logged_in = 0;
             write(client_socket, "3", sizeof("3"));
-            write(client_socket, &userId, sizeof(userId));
         }
     }
   }//end read loop
