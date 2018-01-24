@@ -2,10 +2,14 @@
 
 void process(char *s);
 void subserver(int from_client);
+void print_packet(char *s);
 
 void handle_error(){
     printf("Error: %s\n", strerror(errno));
     exit(1);
+}
+void print_packet(char *s){
+    printf("[Server]: received %s\n", s);
 }
 
 int forking_server() {
@@ -20,8 +24,7 @@ int forking_server() {
     f = fork();
     if (f == 0)
       subserver(client_socket);
-    else
-      close(client_socket);
+    // does parent need to close socket? ***  
   }
 }
 
@@ -38,6 +41,7 @@ void subserver(int client_socket) {
     if(!strcmp(buffer, "PUSH")){ //dealing with push request
         write(client_socket, buffer, sizeof(buffer)); //responds to client
         read(client_socket, file, sizeof(file)); //recieves file name
+        print_packet(file);
         write(client_socket, buffer, sizeof(buffer)); //responds
 
         //file transfer code ***
@@ -46,6 +50,7 @@ void subserver(int client_socket) {
         fd = open(filePath, O_CREAT|O_WRONLY);
         //recieving file contents
         read(client_socket, fileContent, sizeof(fileContent));
+        print_packet(fileContent);
         //writing into fd
         write(fd, fileContent, sizeof(fileContent));
         close(fd);
@@ -53,6 +58,7 @@ void subserver(int client_socket) {
     else if(!strcmp(buffer,"PULL")){ //dealing with a pull request
         write(client_socket, buffer, sizeof(buffer)); //responds to client
         read(client_socket, file, sizeof(file)); //recieves file name
+        print_packet(file);
         write(client_socket, buffer, sizeof(buffer)); //responds
 
         //file transfer code ***
@@ -62,6 +68,7 @@ void subserver(int client_socket) {
         if((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
             handle_error();
         read(fd, fileContent, sizeof(fileContent));
+        print_packet(fileContent);
         //sending file contents
         write(client_socket, fileContent, sizeof(fileContent));
         close(fd);
@@ -151,11 +158,19 @@ int server_setup() {
 int server_connect(int sd) {
     int client_socket;
     socklen_t sock_size;
-    struct sockaddr_storage client_address;
+    struct sockaddr_in client_address;
 
+    // client_socket = accept(sd, (struct sockaddr *)&client_address, &sock_size);
+
+    sock_size = sizeof(struct sockaddr_in);
+
+    //accept connection from an incoming client
     client_socket = accept(sd, (struct sockaddr *)&client_address, &sock_size);
+
     error_check(client_socket, "server accept");
 
-
+    if(client_socket > 0){
+        printf("[server] connection established: client_socket[%d]\n", client_socket);
+    }
     return client_socket;
 }

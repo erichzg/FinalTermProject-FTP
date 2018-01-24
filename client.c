@@ -18,7 +18,8 @@ void client(char * serverIP){
   char filePath[BUFFER_SIZE];
   char fileContent[1024];
   int fd;
-  server_socket = client_setup( serverIP);
+  server_socket = client_setup(serverIP);
+
 
     //login code***
     printf("Do you have an account yet?(y/n)\n");
@@ -118,6 +119,7 @@ void client(char * serverIP){
   returns the file descriptor for the socket
   =========================*/
 int client_setup(char * server) {
+    sleep(1);
     int sd, i;
 
     //create the socket
@@ -156,14 +158,14 @@ void error_check( int i, char *s ) {
 int check_or_create_account(char * username, char * password, int server_socket, char * protocol){
     char * buffer = (char *) malloc(256 * sizeof(char));
     int * retInt = (int *) malloc(sizeof(int));
-    char * encrypted = crypt(password, "ab");
+    char * encrypted = password;//crypt(password, "ab");
     //check file of encrypted passwords***
 
     write(server_socket, protocol, sizeof(protocol)); //sends either CHECK or CREAT
-    read(server_socket, buffer, sizeof(buffer));
+/*    read(server_socket, buffer, sizeof(buffer));
     write(server_socket, username, sizeof(username)); //sending username
     read(server_socket, buffer, sizeof(buffer));
-    write(server_socket, encrypted, sizeof(encrypted)); //sending encrypted password
+    write(server_socket, encrypted, sizeof(encrypted)); //sending encrypted password*/
     read(server_socket, retInt, sizeof(retInt)); //sending verification in the form of userId
     return *retInt;
 }
