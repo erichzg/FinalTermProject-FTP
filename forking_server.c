@@ -29,7 +29,8 @@ int forking_server() {
 }
 
 void subserver(int client_socket) {
-  char buffer[BUFFER_SIZE];
+    char temp_buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE];
     char file[BUFFER_SIZE];
     char filePath[BUFFER_SIZE];
     char fileContent[PACKET_SIZE];
@@ -37,6 +38,8 @@ void subserver(int client_socket) {
     char perm_desc[PACKET_SIZE]; //<file>;<username>:
     char perms_content[LOGFILE_SIZE]; //all permissions
     char *init_file_pos; //pointer to where a file(and permissions begin)
+    //concerning file sharin
+    char collab_username[BUFFER_SIZE];
     //concerning login
     char username[BUFFER_SIZE]; //set to username + : at login stage and used for verifying permissions while logged in
     char enc_password[BUFFER_SIZE];
@@ -122,6 +125,59 @@ void subserver(int client_socket) {
     else if(!strcmp(buffer,"VIEW") && !logged_in){
         //VIEWING CODE ***
         write(client_socket, filesInDir, sizeof(filesInDir));
+    }
+    else if(!strcmp(buffer,"SHARE") && !logged_in){
+        write(client_socket, "1", sizeof("1")); //responds to client
+
+        read(client_socket, temp_buffer, sizeof(temp_buffer)); //receives type of share
+        print_packet(temp_buffer);
+        write(client_socket, "2", sizeof("2")); //responds
+
+        read(client_socket, file, sizeof(file)); //receives file name
+        print_packet(file);
+
+        //verifying permissions to file***
+        int perm_fd = open("./push_perm.txt", O_CREAT|O_RDONLY, 0664); //to work with push permissions
+        read(perm_fd, perms_content, sizeof(perms_content));
+        strcat(file,";");
+        init_file_pos = strstr(perms_content,file); //guaranteed to be correct file because of ; ending
+
+        if(!init_file_pos){//if file not found
+            write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
+            wait_response(ERROR_WAIT,client_socket);
+            write(client_socket,"ERROR: File not found\n",sizeof("ERROR: File not found\n"));
+        }
+        else {//if file found(checking permissions)
+            strncpy(perm_desc,                      //copy into description of permission...
+                    init_file_pos,     //starting from the beginning of description...
+                    sizeof(char) * (int) (strchr(init_file_pos, '|') - init_file_pos)); //to the end of the description
+
+            if (!strstr(perm_desc, username)) {//share access denied
+                write(client_socket, ERROR_RESPONSE, sizeof(ERROR_RESPONSE));
+                wait_response(ERROR_WAIT, client_socket);
+                write(client_socket, "ERROR: Share access denied\n", sizeof("ERROR: Share access denied\n"));
+            }
+            else {//if username found in permissions
+                write(client_socket, "3", sizeof("3")); //confirms permission to share
+
+                read(client_socket, collab_username, sizeof(collab_username)); //receives person to share with
+                print_packet(collab_username);
+                strcat(collab_username,":");
+
+                //reopening file for overwriting purposes
+                close(perm_fd);
+                perm_fd = open("./push_perm.txt", O_CREAT|O_WRONLY|O_TRUNC, 0664); //to work with push permissions
+                //enters head of content(up to where new permission will be added)
+                write(perm_fd,perms_content,sizeof(char)*(int)(strchr(init_file_pos,';')+1-perms_content));
+                //enters new permissions
+                write(perm_fd,collab_username,num_non_null_bytes(collab_username));
+                //enters tail of content
+                write(perm_fd,strchr(init_file_pos,';')+1,num_non_null_bytes(strchr(init_file_pos,';')+1));
+
+                write(client_socket, "4", sizeof("4")); //confirms sharing
+            }
+        }
+        close(perm_fd);
     }
     else if(!strcmp(buffer,"CHECK")){
 

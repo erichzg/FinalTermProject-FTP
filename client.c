@@ -155,15 +155,19 @@ void client(char * serverIP){
             fgets(file, sizeof(file), stdin);
             *strchr(file, '\n') = 0;
             write(server_socket, file, sizeof(file)); //file name sent
-            wait_response("3", server_socket);
 
-            //sending collaborator username
-            printf("\nWhat who are you sharing it with?(enter a single username): ");
-            fgets(ans, sizeof(ans), stdin);
-            *strchr(ans, '\n') = 0;
-            write(server_socket, ans, sizeof(ans)); //file name sent
-            if(!wait_response("4", server_socket))
-                printf("%s shared. %s can now edit",file,ans);
+            if(!wait_response("3", server_socket)){ //waits for confirmation of share permissions
+                //sending collaborator username
+                printf("\nWho are you sharing it with?(enter a single username): ");
+                fgets(ans, sizeof(ans), stdin);
+                *strchr(ans, '\n') = 0;
+                write(server_socket, ans, sizeof(ans)); //file name sent
+
+                if(!wait_response("4", server_socket))//waits for file to be shared
+                    printf("[%s] shared with %s\n",file,ans);
+            }
+
+
         }
         else if(!strcmp("exit",buffer)) {
             printf("Thank you for using FTP. Goodbye\n");
