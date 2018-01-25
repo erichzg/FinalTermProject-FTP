@@ -178,7 +178,7 @@ void client(char * serverIP){
                 printf("\nWho are you sharing it with?(enter a single username): ");
                 fgets(ans, sizeof(ans), stdin);
                 *strchr(ans, '\n') = 0;
-                write(server_socket, ans, sizeof(ans)); //file name sent
+                write(server_socket, ans, sizeof(ans)); //wait_response/file name sent
 
                 if(!wait_response("4", server_socket))//waits for file to be shared
                     printf("[%s] shared with %s\n",file,ans);

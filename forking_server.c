@@ -22,7 +22,7 @@ char * view_files_into(char * user, char * perm_file) {
    
   /* get the first token */
   token = strtok(fileContent, s);
-   
+
   /* walk through other tokens */
   while( token != NULL ) {
     if(strstr(token,user)){
@@ -37,6 +37,16 @@ char * view_files_into(char * user, char * perm_file) {
   }
   
   return correct_files;
+}
+
+
+//djb2 algorithm for string > int hash
+unsigned int hash(unsigned char *str) {
+  unsigned int hash = 5381;
+  int c;
+  while (c = *str++)
+     hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+  return hash;
 }
 
 void handle_error(){
@@ -105,6 +115,10 @@ void subserver(int client_socket) {
             int pull_perm_fd = open("./pull_perm.txt", O_CREAT|O_RDWR|O_APPEND, 0664); //to add pull permissions as well
             write(push_perm_fd, perm_desc, num_non_null_bytes(perm_desc));//writes new permission at end
             write(pull_perm_fd, perm_desc, num_non_null_bytes(perm_desc));//writes new permission at end
+ 
+            int sd = semget(hash(file), 1, 0644 | IPC_CREAT | IPC_EXCL);//make a semaphore
+            semctl(sd, 0, SETVAL, 1);//set value to 1
+
             write(client_socket,"2",sizeof("2"));//confirms push access
         }
         else{//file exists (push permissions need to be verified)
@@ -115,6 +129,13 @@ void subserver(int client_socket) {
                     sizeof(char)*(int)(strchr(init_file_pos,'|')-init_file_pos)); //to the end of the description
             if(strstr(perm_desc,username)){//if username found in permissions
                 fd = open(filePath, O_WRONLY|O_TRUNC, 0664);
+
+		int sd = semget(hash(file), 1, 0644);
+		struct sembuf temp_sembuf;
+		temp_sembuf.sem_op = 1;
+		temp_sembuf.sem_num = 0;
+                semop(sd, &temp_sembuf, 1);//incrementing the semaphore
+
                 write(client_socket,"2",sizeof("2"));//confirms push access
             }
             else{//push access denied
@@ -162,7 +183,22 @@ void subserver(int client_socket) {
                     sizeof(char)*(int)(strchr(init_file_pos,'|')-init_file_pos)); //to the end of the description
             if(strstr(perm_desc,username)){//if username found in permissions
                 fd = open(filePath, O_RDONLY, 0664);
-                write(client_socket,"2",sizeof("2"));//confirms pull access
+
+		int sd = semget(hash(file), 1, 0644);
+		struct sembuf temp_sembuf;
+		temp_sembuf.sem_op = -1;
+		temp_sembuf.sem_num = 0;
+		temp_sembuf.sem_flg = IPC_NOWAIT | SEM_UNDO;
+		int temp = semop(sd, &temp_sembuf, 1);
+                if (temp < 0) {//decrementing the semaphore
+		  write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
+                  wait_response(ERROR_WAIT,client_socket);
+		  write(client_socket,"File currently in use\n", sizeof("File currently in use\n"));
+		  fd = -1;
+		}
+		else{
+                	write(client_socket,"2",sizeof("2"));//confirms pull access
+		}
             }
             else{//pull access denied
                 fd = -1;

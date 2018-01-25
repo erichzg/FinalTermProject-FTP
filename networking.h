@@ -8,6 +8,9 @@
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -22,13 +25,13 @@
 #define NETWORKING_H
 
 #define BUFFER_SIZE 256
-#define PORT "9004"
+#define PORT "9003"
 #define TEST_IP "0.0.0.0"
 #define PACKET_SIZE 1024 //number of bytes in each file packet
 #define LOGFILE_SIZE 32768
 #define ERROR_RESPONSE "-1"
 #define ERROR_WAIT "-2"
-
+#define KEY 24601
 
 void error_check(int i, char *s);
 int num_non_null_bytes(char *s);
