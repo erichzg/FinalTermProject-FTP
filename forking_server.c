@@ -80,7 +80,8 @@ void subserver(int client_socket) {
             else{//push access denied
                 fd = -1;
                 write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
-                write(client_socket,"ERROR: Push access denied",sizeof("ERROR: Push access denied"));
+                wait_response(ERROR_WAIT,client_socket);
+                write(client_socket,"ERROR: Push access denied\n",sizeof("ERROR: Push access denied\n"));
             }
         }
         close(push_perm_fd);
@@ -152,6 +153,7 @@ void subserver(int client_socket) {
             else{//if password doesn't match
                 printf("[Server]: Error username or password isn't correct\n");
                 write(client_socket, ERROR_RESPONSE, sizeof(ERROR_RESPONSE));
+                wait_response(ERROR_WAIT,client_socket);
                 write(client_socket, "ERROR: Username or password isn't correct\n", sizeof("ERROR: Username or password isn't correct\n"));
                 close(fd);
             }
@@ -159,6 +161,7 @@ void subserver(int client_socket) {
         else{ //if username not found in accounts_content
             printf("[Server]: Error username doesn't exist\n");
             write(client_socket, ERROR_RESPONSE, sizeof(ERROR_RESPONSE));
+            wait_response(ERROR_WAIT,client_socket);
             write(client_socket, "ERROR: Username doesn't exist\n", sizeof("ERROR: Username doesn't exist\n"));
             close(fd);
 
@@ -182,6 +185,7 @@ void subserver(int client_socket) {
         if(strstr(accounts_content, username)){
             printf("[Server]: Error username already exist\n");
             write(client_socket, ERROR_RESPONSE, sizeof(ERROR_RESPONSE));
+            wait_response(ERROR_WAIT,client_socket);
             write(client_socket, "ERROR: Username already exists\n", sizeof("ERROR: Username already exists\n"));
             close(fd);
         }

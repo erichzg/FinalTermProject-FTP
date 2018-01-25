@@ -13,6 +13,7 @@ void client(char * serverIP){
 
   int server_socket;
   char buffer[BUFFER_SIZE];
+  char ans[BUFFER_SIZE];
   char file[BUFFER_SIZE];
   char filePath[BUFFER_SIZE];
   char fileContent[PACKET_SIZE];
@@ -69,9 +70,10 @@ void client(char * serverIP){
 
     printf("\nWelcome %s. You are now logged in",username);
     while (1) {
-        printf("\nWould you like to push or pull (a file), view available files in the FTP, or exit? (push/pull/view/exit): ");
+        printf("\nWould you like to push or pull (a file), \nview available files in the FTP, add collaborators, or exit? \n(push/pull/view/share/exit): ");
         fgets(buffer, sizeof(buffer), stdin);
         *strchr(buffer, '\n') = 0;
+
         if(!strcmp("push",buffer)){ //push file code
             //sending push request
             write(server_socket, "PUSH", sizeof("PUSH")); //push request sent
@@ -97,8 +99,6 @@ void client(char * serverIP){
                 write(server_socket, fileContent, num_non_null_bytes(fileContent));
                 printf("Pushed from '%s' to '%s'\n", filePath, file); //***
             }
-
-
         }
         else if(!strcmp("pull",buffer)){//pull file code
             //sending pull request
@@ -127,11 +127,43 @@ void client(char * serverIP){
             printf("Pulled from '%s' to '%s'\n", file,filePath);
 
         }
-        else if(!strcmp("view",buffer)) {
+        else if(!strcmp("view",buffer)){
             write(server_socket, "VIEW", sizeof("VIEW")); //view request sent
 
             //VIEWING CODE ***
             read(server_socket, stdout, sizeof(fileContent)); //get this to read to stdout***
+        }
+        else if(!strcmp("share",buffer)){
+            //sending share request
+            write(server_socket,"SHARE",sizeof("SHARE"));
+            wait_response("1", server_socket);
+
+            printf("\nWould you like to share push access?(y/n):");
+            fgets(ans,sizeof(ans),stdin);
+            *strchr(ans, '\n') = 0;
+
+            if(!strcmp(ans,"y") || !strcmp(ans, "Y")){//push access sharing
+                write(server_socket,"PUSH_SHARE",sizeof("PUSH_SHARE"));
+                wait_response("2", server_socket);
+            }
+            else if(!strcmp(ans,"n") || !strcmp(ans, "N")){
+                //pull file request***
+            }
+
+            //sending file name
+            printf("\nWhat is the name of the file you are sharing?: ");
+            fgets(file, sizeof(file), stdin);
+            *strchr(file, '\n') = 0;
+            write(server_socket, file, sizeof(file)); //file name sent
+            wait_response("3", server_socket);
+
+            //sending collaborator username
+            printf("\nWhat who are you sharing it with?(enter a single username): ");
+            fgets(ans, sizeof(ans), stdin);
+            *strchr(ans, '\n') = 0;
+            write(server_socket, ans, sizeof(ans)); //file name sent
+            if(!wait_response("4", server_socket))
+                printf("%s shared. %s can now edit",file,ans);
         }
         else if(!strcmp("exit",buffer)) {
             printf("Thank you for using FTP. Goodbye\n");
@@ -139,7 +171,7 @@ void client(char * serverIP){
             exit(0);
         }
         else{
-            printf("Please type in 'push', 'pull', 'view', or 'exit'.");
+            printf("Please type in 'push', 'pull', 'view', 'share', or 'exit'.\n");
         }
   }
 }
@@ -226,14 +258,14 @@ int check_or_create_account(char * username, char * password, int server_socket,
 //returns 0 upon success
 int wait_response(char * message, int server_socket){
     char buffer[BUFFER_SIZE];
-
     while(strcmp(buffer,message)) {
         read(server_socket, buffer, sizeof(buffer));
 
         //if it gets error message instead of confirmation
         if(strstr(buffer,ERROR_RESPONSE)) {
+            write(server_socket, ERROR_WAIT, sizeof(ERROR_WAIT));
             read(server_socket, buffer, sizeof(buffer)); //reading follow up error message
-            printf("%s", buffer);
+            printf("%s",buffer);
             return -1;
         }
     }
