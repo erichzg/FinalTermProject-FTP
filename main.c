@@ -5,7 +5,7 @@
 
 
 int main() {
-    char serverIP[256] = "149.89.150.32"; //DEFAULT IP FOR TESTING
+    char serverIP[256]; //DEFAULT IP FOR TESTING
 
     //ask user if they wont to create a new server or client
     printf("Welcome to FTP\nPress c to run client or s to run server.\n");
