@@ -17,7 +17,6 @@ void client(char * serverIP){
   char file[BUFFER_SIZE];
   char filePath[BUFFER_SIZE];
   char fileContent[PACKET_SIZE];
-  int fd;
 
   server_socket = client_setup(serverIP);
 
@@ -91,6 +90,7 @@ void client(char * serverIP){
                 fgets(filePath, sizeof(filePath), stdin);
                 *strchr(filePath, '\n') = 0;
                 //accessing file contents
+                int fd;
                 if ((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
                     handle_error();
                 read(fd, fileContent, sizeof(fileContent));
@@ -110,21 +110,22 @@ void client(char * serverIP){
             fgets(file, sizeof(file), stdin);
             *strchr(file, '\n') = 0;
             write(server_socket, file, sizeof(file)); //file name sent
-            wait_response("2", server_socket);
 
-            //receiving file contents
-            write(server_socket, "3", sizeof("3"));//responds with a ready to read signal
-            read(server_socket, fileContent, sizeof(fileContent));
-            //storing file contents in client-side file
-            printf("\nWhere would you like the file contents to be pulled?(enter a path to file): ");
-            fgets(filePath, sizeof(filePath), stdin);
-            *strchr(filePath, '\n') = 0;
-            fd = open(filePath, O_CREAT|O_WRONLY|O_TRUNC, 0664);
-            //writing into fd up to NULL
-            write(fd, fileContent, num_non_null_bytes(fileContent));
-            close(fd);
+            if(!wait_response("2", server_socket)){//wait for confirmation to send file contents
+                //receiving file contents
+                write(server_socket, "3", sizeof("3"));//responds with a ready to read signal
+                read(server_socket, fileContent, sizeof(fileContent));
+                //storing file contents in client-side file
+                printf("\nWhere would you like the file contents to be pulled?(creates new file if one doesnt exist)\n(enter a path to file): ");
+                fgets(filePath, sizeof(filePath), stdin);
+                *strchr(filePath, '\n') = 0;
+                int fd = open(filePath, O_CREAT|O_WRONLY|O_TRUNC, 0664);
+                //writing into fd up to NULL
+                write(fd, fileContent, num_non_null_bytes(fileContent));
+                close(fd);
 
-            printf("Pulled from '%s' to '%s'\n", file,filePath);
+                printf("Pulled from '%s' to '%s'\n", file,filePath);
+            }
 
         }
         else if(!strcmp("view",buffer)){
@@ -138,17 +139,26 @@ void client(char * serverIP){
             write(server_socket,"SHARE",sizeof("SHARE"));
             wait_response("1", server_socket);
 
-            printf("\nWould you like to share push access?(y/n):");
+            printf("\nWould you like to share push or pull access?(push/pull):");
             fgets(ans,sizeof(ans),stdin);
             *strchr(ans, '\n') = 0;
 
-            if(!strcmp(ans,"y") || !strcmp(ans, "Y")){//push access sharing
-                write(server_socket,"PUSH_SHARE",sizeof("PUSH_SHARE"));
-                wait_response("2", server_socket);
+            int leave_cond = 1;
+            while(leave_cond){
+                if(!strcmp(ans,"push")){//push access sharing
+                    write(server_socket,"PUSH_SHARE",sizeof("PUSH_SHARE"));
+                    wait_response("2", server_socket);
+                    leave_cond = 0;
+                }
+                else if(!strcmp(ans,"pull")){//pull access sharing
+                    write(server_socket,"PULL_SHARE",sizeof("PULL_SHARE"));
+                    wait_response("2", server_socket);
+                    leave_cond = 0;
+                }
+                else
+                    printf("\nPlease type either 'push' or 'pull'");
             }
-            else if(!strcmp(ans,"n") || !strcmp(ans, "N")){
-                //pull file request***
-            }
+
 
             //sending file name
             printf("\nWhat is the name of the file you are sharing?: ");

@@ -58,7 +58,7 @@ void subserver(int client_socket) {
         read(client_socket, file, sizeof(file)); //receives file name
         print_packet(file);
 
-        //file transfer code ***
+        //file transfer code
         strcpy(filePath, "./fileDir/");
         strcat(filePath,file);
         strcat(file, ";"); //adds ; to the end of file name
@@ -67,7 +67,9 @@ void subserver(int client_socket) {
 
         if((fd = open(filePath, O_CREAT|O_EXCL|O_WRONLY, 0664))>=0){//if file doesn't exist yet
             sprintf(perm_desc, "%s%s|%c",file,username,'\0'); //username/file already have correct endings
+            int pull_perm_fd = open("./pull_perm.txt", O_CREAT|O_RDWR|O_APPEND, 0664); //to add pull permissions as well
             write(push_perm_fd, perm_desc, num_non_null_bytes(perm_desc));//writes new permission at end
+            write(pull_perm_fd, perm_desc, num_non_null_bytes(perm_desc));//writes new permission at end
             write(client_socket,"2",sizeof("2"));//confirms push access
         }
         else{//file exists (push permissions need to be verified)
@@ -89,7 +91,7 @@ void subserver(int client_socket) {
         }
         close(push_perm_fd);
 
-        if(fd >= 0){
+        if(fd >= 0){//if server decides to push
             //receiving file contents
             read(client_socket, fileContent, sizeof(fileContent));
             print_packet(fileContent);
@@ -104,23 +106,47 @@ void subserver(int client_socket) {
 
         read(client_socket, file, sizeof(file)); //receives file name
         print_packet(file);
-        write(client_socket, "2", sizeof("2")); //responds
 
         //file transfer code ***
         strcpy(filePath, "./fileDir/");
         strcat(filePath,file);
-        //accessing file contents
-        int fd;//to store fileContent
-        if((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
-            handle_error();
-        read(fd, fileContent, sizeof(fileContent));
+        strcat(file, ";"); //adds ; to the end of file name
 
-        //sending file contents up to NULL
-        wait_response("3", client_socket);
-        write(client_socket, fileContent, num_non_null_bytes(fileContent));
-        close(fd);
-        printf("[Server]: pulled from '%s'\n", file);
+        int fd = -1;
+        int pull_perm_fd = open("./pull_perm.txt", O_RDONLY, 0664); //to work with pull permissions
+        read(pull_perm_fd, perms_content, sizeof(perms_content));
+        init_file_pos = strstr(perms_content,file); //guaranteed to be file because of ; ending
+        if(!init_file_pos){//if file not found
+            write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
+            wait_response(ERROR_WAIT,client_socket);
+            write(client_socket,"ERROR: File not found\n",sizeof("ERROR: File not found\n"));
+        }
+        else{//if file found(check pull permissions)
+            strncpy(perm_desc,                      //copy into description of permission...
+                    init_file_pos,     //starting from the beginning of description...
+                    sizeof(char)*(int)(strchr(init_file_pos,'|')-init_file_pos)); //to the end of the description
+            if(strstr(perm_desc,username)){//if username found in permissions
+                fd = open(filePath, O_RDONLY, 0664);
+                write(client_socket,"2",sizeof("2"));//confirms pull access
+            }
+            else{//pull access denied
+                fd = -1;
+                write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
+                wait_response(ERROR_WAIT,client_socket);
+                write(client_socket,"ERROR: Pull access denied\n",sizeof("ERROR: Pull access denied\n"));
+            }
+        }
 
+        if(fd >= 0){//if server decides to pull
+            //accessing file contents
+            read(fd, fileContent, sizeof(fileContent));
+            //sending file contents up to NULL
+            wait_response("3", client_socket);
+            write(client_socket, fileContent, num_non_null_bytes(fileContent));
+            close(fd);
+            printf("[Server]: pulled from '%s'\n", file);
+        }
+        close(pull_perm_fd);
     }
     else if(!strcmp(buffer,"VIEW") && !logged_in){
         //VIEWING CODE ***
@@ -137,7 +163,8 @@ void subserver(int client_socket) {
         print_packet(file);
 
         //verifying permissions to file***
-        int perm_fd = open("./push_perm.txt", O_CREAT|O_RDONLY, 0664); //to work with push permissions
+        int perm_fd = open(!strcmp(temp_buffer,"PUSH_SHARE") ? "./push_perm.txt":"./pull_perm.txt",
+                           O_RDONLY, 0664); //to work with file permissions
         read(perm_fd, perms_content, sizeof(perms_content));
         strcat(file,";");
         init_file_pos = strstr(perms_content,file); //guaranteed to be correct file because of ; ending
@@ -160,13 +187,15 @@ void subserver(int client_socket) {
             else {//if username found in permissions
                 write(client_socket, "3", sizeof("3")); //confirms permission to share
 
-                read(client_socket, collab_username, sizeof(collab_username)); //receives person to share with
+                //receives person to share with
+                read(client_socket, collab_username, sizeof(collab_username));
                 print_packet(collab_username);
                 strcat(collab_username,":");
 
                 //reopening file for overwriting purposes
                 close(perm_fd);
-                perm_fd = open("./push_perm.txt", O_CREAT|O_WRONLY|O_TRUNC, 0664); //to work with push permissions
+                perm_fd = open(!strcmp(temp_buffer,"PUSH_SHARE") ? "./push_perm.txt":"./pull_perm.txt",
+                               O_WRONLY|O_TRUNC, 0664); //to work with push permissions
                 //enters head of content(up to where new permission will be added)
                 write(perm_fd,perms_content,sizeof(char)*(int)(strchr(init_file_pos,';')+1-perms_content));
                 //enters new permissions
