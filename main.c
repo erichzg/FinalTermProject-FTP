@@ -20,7 +20,10 @@ int main() {
         forking_server();
     }
         else if(ans[0] == 'c' || ans[0] == 'C') {
-            client(serverIP);
+            printf("What server IP do you want to connect to?\n");
+            fgets(ans, 256, stdin);
+            *strchr(ans, '\n') = 0;
+            client(ans);
         } else {
             printf ("Cannot not do %s. try c or s next time.\n", ans);
         }
