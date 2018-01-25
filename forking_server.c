@@ -4,6 +4,41 @@ void process(char *s);
 void subserver(int from_client);
 void print_packet(char *s);
 
+char * view_files_into(char * user, char * perm_file) {
+  int fd = open(perm_file, O_RDONLY, 0644);
+  char fileContent[LOGFILE_SIZE];
+  memset(fileContent, 0, sizeof(fileContent));
+  read(fd, fileContent, sizeof(fileContent));
+  close(fd);
+  
+  const char s[2] = "|";
+  char * token;
+  char file[256];
+  memset(file, 0, sizeof(file));
+  char file_list[PACKET_SIZE];
+  char * correct_files;
+  correct_files = (char *) calloc(PACKET_SIZE, sizeof(char));
+  char users[256];
+   
+  /* get the first token */
+  token = strtok(fileContent, s);
+   
+  /* walk through other tokens */
+  while( token != NULL ) {
+    if(strstr(token,user)){
+      strncpy(file, token, sizeof(char) * (int)(strchr(token, ';')-token));
+      strcpy(correct_files + strlen(correct_files), file);
+      strcpy(correct_files + strlen(correct_files), ", ");
+    }
+    token = strtok(NULL, s);
+  }
+  if (!(correct_files[0])) {
+    return "\n";
+  }
+  
+  return correct_files;
+}
+
 void handle_error(){
     printf("Error: %s\n", strerror(errno));
     exit(1);
@@ -150,7 +185,14 @@ void subserver(int client_socket) {
     }
     else if(!strcmp(buffer,"VIEW") && !logged_in){
         //VIEWING CODE ***
-        write(client_socket, filesInDir, sizeof(filesInDir));
+      char * pull_files;
+      pull_files = view_files_into(username, "pull_perm.txt");
+      write(client_socket, pull_files, strlen(pull_files));
+
+      wait_response("1",client_socket);
+      char * push_files;
+      push_files = view_files_into(username, "push_perm.txt");
+      write(client_socket, push_files, strlen(push_files));
     }
     else if(!strcmp(buffer,"SHARE") && !logged_in){
         write(client_socket, "1", sizeof("1")); //responds to client

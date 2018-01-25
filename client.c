@@ -132,7 +132,14 @@ void client(char * serverIP){
             write(server_socket, "VIEW", sizeof("VIEW")); //view request sent
 
             //VIEWING CODE ***
-            read(server_socket, stdout, sizeof(fileContent)); //get this to read to stdout***
+	    memset(fileContent, 0, sizeof(fileContent));
+            read(server_socket, fileContent, sizeof(fileContent));
+	    printf("pull-able files: %s\n", fileContent);
+
+	    memset(fileContent, 0, sizeof(fileContent));
+	    write(server_socket,"1",sizeof("1"));
+	    read(server_socket, fileContent, sizeof(fileContent));
+	    printf("push-able files: %s\n", fileContent);
         }
         else if(!strcmp("share",buffer)){
             //sending share request
