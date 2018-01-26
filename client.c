@@ -100,7 +100,8 @@ void client(char * serverIP){
 
             if(!wait_response("2", server_socket)){//wait for confirmation to send file contents
                 //file transfer
-                printf("\nWhat is the path to this file?(must point to existing file on your computer)\n(path): ");
+                printf("\nWhat is the path to this file?(must point to existing file on your computer)\n");
+                printf("(try ./example.txt or ./example2.txt for testing)\n(path): ");
                 fgets(filePath, sizeof(filePath), stdin);
                 *strchr(filePath, '\n') = 0;
                 //accessing file contents
