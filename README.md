@@ -59,3 +59,5 @@
      
    File ```base``` in fileDir should not be interracted with(will cause semaphore blockages). If client/server program freeze up due 
    to this bug, they should be rerun.
+
+   Client doesn't recognize ~ in directory path when uploading e.g.: ~/test.txt
