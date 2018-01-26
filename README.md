@@ -29,21 +29,21 @@
      other users.
      
    ## Bugs:
-     **Empty files** should not be pushed/pulled(when pushing, you must specify a path to a file that exists and contains
-     some data) If client program freezes up due to this bug, it should be rerun. 
+   **Empty files** should not be pushed/pulled(when pushing, you must specify a path to a file that exists and contains
+   some data) If client program freezes up due to this bug, it should be rerun. 
      
-     If a client can't pull a file that is in use, they can push into that file(upping the semaphore) 
-     and pull what they pushed. While they still won't be able to pull the original contents(since they overwrote on
-     the push), this is still an issue since clients shouldn't be able to **gain pull accesss to files currently in use**
-     (at least not by our rules).
+   If a client can't pull a file that is in use, they can push into that file(upping the semaphore) 
+   and pull what they pushed. While they still won't be able to pull the original contents(since they overwrote on
+   the push), this is still an issue since clients shouldn't be able to **gain pull accesss to files currently in use**
+   (at least not by our rules).
      
-     When sharing, a client can append any username without non-allowed chars(':',';','|'). This means they can **append
-     usernames that don't exist** and append the same username **multiple times**(including readding themselves).
+   When sharing, a client can append any username without non-allowed chars(':',';','|'). This means they can **append
+   usernames that don't exist** and append the same username **multiple times**(including readding themselves).
      
-     Files larger than **32KB** cannot be pushed/pulled corrects and account/permission files are capped at **2KB** of information.
+   Files larger than **32KB** cannot be pushed/pulled corrects and account/permission files are capped at **2KB** of information.
      
-     Accounts, permissions, and database files **aren't secure** when testing on same computer(could theoretically be accessed
-     by clients without going through server). Also passwords can be seen when typed into terminal. This is a high school cs
-     project, so please don't store your actual passwords here.
+   Accounts, permissions, and database files **aren't secure** when testing on same computer(could theoretically be accessed
+   by clients without going through server). Also passwords can be seen when typed into terminal. This is a high school cs
+   project, so please don't store your actual passwords here.
      
-     File ```base``` in fileDir should not be interracted with(will cause semaphore blockages).
+   File ```base``` in fileDir should not be interracted with(will cause semaphore blockages).
