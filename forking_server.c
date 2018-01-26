@@ -1,6 +1,5 @@
 #include "networking.h"
 
-void process(char *s);
 void subserver(int from_client);
 void print_packet(char *s);
 
@@ -15,10 +14,8 @@ char * view_files_into(char * user, char * perm_file) {
   char * token;
   char file[256];
   memset(file, 0, sizeof(file));
-  char file_list[PACKET_SIZE];
   char * correct_files;
-  correct_files = (char *) calloc(PACKET_SIZE, sizeof(char));
-  char users[256];
+  correct_files = (char *) calloc(LOGFILE_SIZE, sizeof(char));
    
   /* get the first token */
   token = strtok(fileContent, s);
@@ -76,23 +73,23 @@ int forking_server() {
 void subserver(int client_socket) {
     char temp_buffer[BUFFER_SIZE];
     char buffer[BUFFER_SIZE];
-    char file[BUFFER_SIZE];
-    char filePath[BUFFER_SIZE];
-    char fileContent[PACKET_SIZE];
-    char filesInDir[PACKET_SIZE];
-    char perm_desc[PACKET_SIZE]; //<file>;<username>:
+    //concerning file transfering and permissions
+    char file[BUFFER_SIZE];//file name
+    char filePath[BUFFER_SIZE];//file path
+    char fileContent[PACKET_SIZE];//transfers up to 32KB of file content
+    char perm_desc[LOGFILE_SIZE]; //<file>;<username1>:<username2>:
     char perms_content[LOGFILE_SIZE]; //all permissions
-    char *init_file_pos; //pointer to where a file(and permissions begin)
+    char *init_file_pos; //pointer to where a file permissions begin
     //concerning file sharin
-    char collab_username[BUFFER_SIZE];
+    char collab_username[BUFFER_SIZE];//username of collaborator
     //concerning login
     char username[BUFFER_SIZE]; //set to username + : at login stage and used for verifying permissions while logged in
-    char enc_password[BUFFER_SIZE];
-    char * double_enc; // double encrypted password
+    char enc_password[BUFFER_SIZE]; //ab salt crypt from client
+    char * double_enc; // bc salt crypt on ab salt crypt from client
     char expected_password[BUFFER_SIZE]; //also double encrypted
-    char *init_username_pos; //pointer to where username in question begins
-    char account_desc[PACKET_SIZE]; //<username>:<password>;
-    char accounts_content[LOGFILE_SIZE];
+    char *init_username_pos; //pointer to where username in account file begins
+    char account_desc[LOGFILE_SIZE]; //<username>:<password>;
+    char accounts_content[LOGFILE_SIZE]; //content of file with usernames and passwords
     int logged_in = -1;//0 if user is logged in
 
   while (read(client_socket, buffer, sizeof(buffer))) {
@@ -130,16 +127,16 @@ void subserver(int client_socket) {
             if(strstr(perm_desc,username)){//if username found in permissions
                 fd = open(filePath, O_WRONLY|O_TRUNC, 0664);
 
-		int sd = semget(hash(file), 1, 0644);
-		struct sembuf temp_sembuf;
-		temp_sembuf.sem_op = 1;
-		temp_sembuf.sem_num = 0;
-                semop(sd, &temp_sembuf, 1);//incrementing the semaphore
+                int sd = semget(hash(file), 1, 0644);
+                struct sembuf temp_sembuf;
+                temp_sembuf.sem_op = 1;
+                temp_sembuf.sem_num = 0;
+                semctl(sd, 0, SETVAL, 1);//resets value to one(doesn't UP since multiple pushes would make val>1)
 
                 write(client_socket,"2",sizeof("2"));//confirms push access
             }
             else{//push access denied
-                fd = -1;
+                fd = -1;//prevent operations on any file
                 write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
                 wait_response(ERROR_WAIT,client_socket);
                 write(client_socket,"ERROR: Push access denied\n",sizeof("ERROR: Push access denied\n"));
@@ -149,6 +146,7 @@ void subserver(int client_socket) {
 
         if(fd >= 0){//if server decides to push
             //receiving file contents
+            memset(fileContent,0,sizeof(fileContent));
             read(client_socket, fileContent, sizeof(fileContent));
             print_packet(fileContent);
             //writing into fd up to NULL
@@ -189,13 +187,13 @@ void subserver(int client_socket) {
 		temp_sembuf.sem_op = -1;
 		temp_sembuf.sem_num = 0;
 		temp_sembuf.sem_flg = IPC_NOWAIT | SEM_UNDO;
-		int temp = semop(sd, &temp_sembuf, 1);
-                if (temp < 0) {//decrementing the semaphore
-		  write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
-                  wait_response(ERROR_WAIT,client_socket);
-		  write(client_socket,"File currently in use\n", sizeof("File currently in use\n"));
-		  fd = -1;
-		}
+        int temp = semop(sd, &temp_sembuf, 1);
+        if (temp < 0) {//decrementing the semaphore
+            write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
+            wait_response(ERROR_WAIT,client_socket);
+            write(client_socket,"File currently in use\n", sizeof("File currently in use\n"));
+            fd = -1;
+        }
 		else{
                 	write(client_socket,"2",sizeof("2"));//confirms pull access
 		}
@@ -210,6 +208,7 @@ void subserver(int client_socket) {
 
         if(fd >= 0){//if server decides to pull
             //accessing file contents
+            memset(fileContent,0,sizeof(fileContent));
             read(fd, fileContent, sizeof(fileContent));
             //sending file contents up to NULL
             wait_response("3", client_socket);
@@ -268,20 +267,28 @@ void subserver(int client_socket) {
                 //receives person to share with
                 read(client_socket, collab_username, sizeof(collab_username));
                 print_packet(collab_username);
-                strcat(collab_username,":");
+                if(strchr(collab_username, ':') || strchr(collab_username, '|')|| strchr(collab_username, ';')){
+                    write(client_socket, ERROR_RESPONSE, sizeof(ERROR_RESPONSE));
+                    wait_response(ERROR_WAIT, client_socket);
+                    write(client_socket, "ERROR: Username contains '|',':', or ';'\n",
+                          sizeof("ERROR: Username contains '|',':', or ';'\n"));
+                }
+                else{//if username doesn't have illegal chars
+                    strcat(collab_username,":");
 
-                //reopening file for overwriting purposes
-                close(perm_fd);
-                perm_fd = open(!strcmp(temp_buffer,"PUSH_SHARE") ? "./push_perm.txt":"./pull_perm.txt",
-                               O_WRONLY|O_TRUNC, 0664); //to work with push permissions
-                //enters head of content(up to where new permission will be added)
-                write(perm_fd,perms_content,sizeof(char)*(int)(strchr(init_file_pos,';')+1-perms_content));
-                //enters new permissions
-                write(perm_fd,collab_username,num_non_null_bytes(collab_username));
-                //enters tail of content
-                write(perm_fd,strchr(init_file_pos,';')+1,num_non_null_bytes(strchr(init_file_pos,';')+1));
+                    //reopening file for overwriting purposes
+                    close(perm_fd);
+                    perm_fd = open(!strcmp(temp_buffer,"PUSH_SHARE") ? "./push_perm.txt":"./pull_perm.txt",
+                                   O_WRONLY|O_TRUNC, 0664); //to work with push permissions
+                    //enters head of content(up to where new permission will be added)
+                    write(perm_fd,perms_content,sizeof(char)*(int)(strchr(init_file_pos,';')+1-perms_content));
+                    //enters new permissions
+                    write(perm_fd,collab_username,num_non_null_bytes(collab_username));
+                    //enters tail of content
+                    write(perm_fd,strchr(init_file_pos,';')+1,num_non_null_bytes(strchr(init_file_pos,';')+1));
 
-                write(client_socket, "4", sizeof("4")); //confirms sharing
+                    write(client_socket, "4", sizeof("4")); //confirms sharing
+                }
             }
         }
         close(perm_fd);
@@ -364,19 +371,15 @@ void subserver(int client_socket) {
             write(client_socket, "3", sizeof("3"));
         }
     }
+    else{//doesn't recieve one of known commands
+        write(client_socket, ERROR_RESPONSE, sizeof(ERROR_RESPONSE));
+        wait_response(ERROR_WAIT,client_socket);
+        write(client_socket, "ERROR: Didn't understand command please try again\n",
+              sizeof("ERROR: Didn't understand command please try again\n"));
+    }
   }//end read loop
   close(client_socket);
   exit(0);
-}
-
-void process(char * s) {
-  while (*s) {
-    if (*s >= 'a' && *s <= 'z')
-      *s = ((*s - 'a') + 13) % 26 + 'a';
-    else  if (*s >= 'A' && *s <= 'Z')
-      *s = ((*s - 'a') + 13) % 26 + 'a';
-    s++;
-  }
 }
 
 

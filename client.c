@@ -93,6 +93,7 @@ void client(char * serverIP){
                 int fd;
                 if ((fd = open(filePath, O_RDONLY)) < 0) //checks if file exists
                     handle_error();
+                memset(fileContent,0,sizeof(fileContent));
                 read(fd, fileContent, sizeof(fileContent));
                 close(fd);
                 //sending file contents up to NULL
@@ -113,6 +114,7 @@ void client(char * serverIP){
 
             if(!wait_response("2", server_socket)){//wait for confirmation to send file contents
                 //receiving file contents
+                memset(fileContent,0,sizeof(fileContent));
                 write(server_socket, "3", sizeof("3"));//responds with a ready to read signal
                 read(server_socket, fileContent, sizeof(fileContent));
                 //storing file contents in client-side file
@@ -132,14 +134,14 @@ void client(char * serverIP){
             write(server_socket, "VIEW", sizeof("VIEW")); //view request sent
 
             //VIEWING CODE ***
-	    memset(fileContent, 0, sizeof(fileContent));
+            memset(fileContent, 0, sizeof(fileContent));
             read(server_socket, fileContent, sizeof(fileContent));
-	    printf("pull-able files: %s\n", fileContent);
+            printf("pull-able files: %s\n", fileContent);
 
-	    memset(fileContent, 0, sizeof(fileContent));
-	    write(server_socket,"1",sizeof("1"));
-	    read(server_socket, fileContent, sizeof(fileContent));
-	    printf("push-able files: %s\n", fileContent);
+            memset(fileContent, 0, sizeof(fileContent));
+            write(server_socket,"1",sizeof("1"));
+            read(server_socket, fileContent, sizeof(fileContent));
+            printf("push-able files: %s\n", fileContent);
         }
         else if(!strcmp("share",buffer)){
             //sending share request
@@ -162,8 +164,11 @@ void client(char * serverIP){
                     wait_response("2", server_socket);
                     leave_cond = 0;
                 }
-                else
-                    printf("\nPlease type either 'push' or 'pull'");
+                else{
+                    printf("\nPlease type either 'push' or 'pull'\n");
+                    fgets(ans,sizeof(ans),stdin);
+                    *strchr(ans, '\n') = 0;
+                }
             }
 
 
@@ -183,8 +188,6 @@ void client(char * serverIP){
                 if(!wait_response("4", server_socket))//waits for file to be shared
                     printf("[%s] shared with %s\n",file,ans);
             }
-
-
         }
         else if(!strcmp("exit",buffer)) {
             printf("Thank you for using FTP. Goodbye\n");
