@@ -64,7 +64,7 @@ unsigned int hash(unsigned char *str) {
 /*=========================
   handle_error
 
-  args: int i, char* s
+  args:
 
   Prints error in errno if there is one
   =========================*/
@@ -115,6 +115,7 @@ int forking_server() {
 void subserver(int client_socket) {
     char temp_buffer[BUFFER_SIZE];
     char buffer[BUFFER_SIZE];
+
     //concerning file transfering and permissions
     char file[BUFFER_SIZE];//file name
     char filePath[BUFFER_SIZE];//file path
@@ -122,8 +123,10 @@ void subserver(int client_socket) {
     char perm_desc[LOGFILE_SIZE]; //<file>;<username1>:<username2>:
     char perms_content[LOGFILE_SIZE]; //all permissions
     char *init_file_pos; //pointer to where a file permissions begin
-    //concerning file sharin
+
+    //concerning file sharing
     char collab_username[BUFFER_SIZE];//username of collaborator
+
     //concerning login
     char username[BUFFER_SIZE]; //set to username + : at login stage and used for verifying permissions while logged in
     char enc_password[BUFFER_SIZE]; //ab salt crypt from client
@@ -135,7 +138,16 @@ void subserver(int client_socket) {
     int logged_in = -1;//0 if user is logged in
 
   while (read(client_socket, buffer, sizeof(buffer))) {
+    /*-----------------
+        PUSH request
 
+        Checks if requested file exists in database
+        If file hasn't been created, then create one and write permissions for owner into push_perm.txt and pull_perm.txt
+        (and creates a semaphore)
+        If file already exists verify users push permissions
+
+        If push request is granted than
+    -----------------*/
     if(!strcmp(buffer, "PUSH") && !logged_in){ //dealing with push request
         write(client_socket, "1", sizeof("1")); //responds to client
 
@@ -235,9 +247,9 @@ void subserver(int client_socket) {
             write(client_socket,"File currently in use\n", sizeof("File currently in use\n"));
             fd = -1;
         }
-		else{
-                	write(client_socket,"2",sizeof("2"));//confirms pull access
-		}
+		else
+            write(client_socket,"2",sizeof("2"));//confirms pull access
+
             }
             else{//pull access denied
                 fd = -1;
