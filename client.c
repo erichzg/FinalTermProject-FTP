@@ -81,7 +81,12 @@ void client(char * serverIP){
         printf("\nWould you like to push or pull (a file), \nview available files in the FTP, add collaborators, or exit? \n(push/pull/view/share/exit): ");
         fgets(buffer, sizeof(buffer), stdin);
         *strchr(buffer, '\n') = 0;
+        /*-----------------
+            push request
 
+            Asks user for a file to push into in database(doesn't have to exist yet)
+            Asks user for a path to local file to push contents from(has to exist with contents inside)
+        -----------------*/
         if(!strcmp("push",buffer)){ //push file code
             //sending push request
             write(server_socket, "PUSH", sizeof("PUSH")); //push request sent
@@ -110,6 +115,12 @@ void client(char * serverIP){
                 printf("Pushed from '%s' to '%s'\n", filePath, file);
             }
         }
+        /*-----------------
+            pull request
+
+            Asks user for a file to pull
+            Asks user for a path to local file to pull contents(doesn't have to exist yet)
+        -----------------*/
         else if(!strcmp("pull",buffer)){//pull file code
             //sending pull request
             write(server_socket, "PULL", sizeof("PULL")); //pull request sent
@@ -137,8 +148,13 @@ void client(char * serverIP){
 
                 printf("Pulled from '%s' to '%s'\n", file,filePath);
             }
-
         }
+        /*-----------------
+            view request
+
+            Prints which files user can pull and push
+            (only looks at permissions NOT whether or not the file is in use(and thus can't be pulled))
+        -----------------*/
         else if(!strcmp("view",buffer)){
             write(server_socket, "VIEW", sizeof("VIEW")); //view request sent
 
@@ -151,6 +167,13 @@ void client(char * serverIP){
             read(server_socket, fileContent, sizeof(fileContent));
             printf("push-able files: %s\n", fileContent);
         }
+        /*-----------------
+            share request
+
+            Asks user whether or not they want to share push or pull access
+            Asks user for file to share
+            Asks user for username to share to
+        -----------------*/
         else if(!strcmp("share",buffer)){
             //sending share request
             write(server_socket,"SHARE",sizeof("SHARE"));
@@ -179,7 +202,6 @@ void client(char * serverIP){
                 }
             }
 
-
             //sending file name
             printf("\nWhat is the name of the file you are sharing?: ");
             fgets(file, sizeof(file), stdin);
@@ -197,6 +219,11 @@ void client(char * serverIP){
                     printf("[%s] shared with %s\n",file,ans);
             }
         }
+        /*-----------------
+            exit request
+
+            terminates client program
+        -----------------*/
         else if(!strcmp("exit",buffer)) {
             printf("Thank you for using FTP. Goodbye\n");
             close(server_socket);

@@ -142,11 +142,12 @@ void subserver(int client_socket) {
         PUSH request
 
         Checks if requested file exists in database
-        If file hasn't been created, then create one and write permissions for owner into push_perm.txt and pull_perm.txt
-        (and creates a semaphore)
-        If file already exists verify users push permissions
+        If file hasn't been created, then create one and append permissions for owner into push_perm.txt and pull_perm.txt
+        (and creates a semaphore KEY for that file, setting its value to 1)
+        If file already exists verify users push permissions and sets semaphore to 1 if all checks out
 
-        If push request is granted than
+        If push request is granted than send confirmation to client and read file data from
+          client_socket into file in database
     -----------------*/
     if(!strcmp(buffer, "PUSH") && !logged_in){ //dealing with push request
         write(client_socket, "1", sizeof("1")); //responds to client
@@ -209,6 +210,14 @@ void subserver(int client_socket) {
             printf("[Server]: pushed to '%s'\n", file);
         }
     }
+    /*-----------------
+        PULL request
+
+        Checks if requested file exists
+        Checks if client has pull permissions to file(downs file's semaphore by 1 if all checks out)
+
+        If pull request is granted than send confirmation to client and send file data to client_socket
+    -----------------*/
     else if(!strcmp(buffer,"PULL") && !logged_in){ //dealing with a pull request
         write(client_socket, "1", sizeof("1")); //responds to client
 
@@ -232,24 +241,25 @@ void subserver(int client_socket) {
             strncpy(perm_desc,                      //copy into description of permission...
                     init_file_pos,     //starting from the beginning of description...
                     sizeof(char)*(int)(strchr(init_file_pos,'|')-init_file_pos)); //to the end of the description
+
             if(strstr(perm_desc,username)){//if username found in permissions
                 fd = open(filePath, O_RDONLY, 0664);
 
-		int sd = semget(hash(file), 1, 0644);
-		struct sembuf temp_sembuf;
-		temp_sembuf.sem_op = -1;
-		temp_sembuf.sem_num = 0;
-		temp_sembuf.sem_flg = IPC_NOWAIT | SEM_UNDO;
-        int temp = semop(sd, &temp_sembuf, 1);
-        if (temp < 0) {//decrementing the semaphore
-            write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
-            wait_response(ERROR_WAIT,client_socket);
-            write(client_socket,"File currently in use\n", sizeof("File currently in use\n"));
-            fd = -1;
-        }
-		else
-            write(client_socket,"2",sizeof("2"));//confirms pull access
+                int sd = semget(hash(file), 1, 0644);
+                struct sembuf temp_sembuf;
+                temp_sembuf.sem_op = -1;
+                temp_sembuf.sem_num = 0;
+                temp_sembuf.sem_flg = IPC_NOWAIT | SEM_UNDO;
+                int temp = semop(sd, &temp_sembuf, 1);
 
+                if (temp < 0) { //if someone has already pulled(and hasn't repushed)
+                    write(client_socket,ERROR_RESPONSE,sizeof(ERROR_RESPONSE));
+                    wait_response(ERROR_WAIT,client_socket);
+                    write(client_socket,"File currently in use\n", sizeof("File currently in use\n"));
+                    fd = -1;
+                }
+                else //confirm pull access
+                    write(client_socket,"2",sizeof("2"));
             }
             else{//pull access denied
                 fd = -1;
@@ -271,6 +281,12 @@ void subserver(int client_socket) {
         }
         close(pull_perm_fd);
     }
+    /*-----------------
+        VIEW request
+
+        Goes through pull_perm.txt and push_perm.txt and sends client the files
+         that they have access to
+    -----------------*/
     else if(!strcmp(buffer,"VIEW") && !logged_in){
       char * pull_files;
       pull_files = view_files_into(username, "pull_perm.txt");
@@ -281,6 +297,15 @@ void subserver(int client_socket) {
       push_files = view_files_into(username, "push_perm.txt");
       write(client_socket, push_files, strlen(push_files));
     }
+    /*-----------------
+        SHARE request
+
+        Handles both push and pull sharing
+        Checks if requested file to share exists
+        Checks if client has permission to push(pull) and allows client to share
+         that permission if they do
+        Appends username to share to into push_perm.txt(pull_perm.txt)
+    -----------------*/
     else if(!strcmp(buffer,"SHARE") && !logged_in){
         write(client_socket, "1", sizeof("1")); //responds to client
 
@@ -345,6 +370,14 @@ void subserver(int client_socket) {
         }
         close(perm_fd);
     }
+    /*-----------------
+        CHECK request
+
+        For signing in
+        Checks if username is in accounts.txt
+        Encrypts the encrypted password(2nd time) and checks if it matches the one in accounts.txt
+        Sets logged_in to 0 if all checks out and keeps username+: for future requests
+    -----------------*/
     else if(!strcmp(buffer,"CHECK")){
 
         //accessing username/ encrypted password
@@ -389,6 +422,14 @@ void subserver(int client_socket) {
 
         }
     }
+    /*-----------------
+        CREAT request
+
+        For creating account
+        Checks if the username already exists in accounts.txt(it shouldn't)
+        Encrypts the encrypted password(2nd time) and appends it with username into accounts.txt
+        Sets logged_in to 0 if all checks out and keeps username+: for future requests
+    -----------------*/
     else if(!strcmp(buffer,"CREAT")){
 
         //accessing username/ encrypted password
