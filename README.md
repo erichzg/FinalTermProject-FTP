@@ -17,15 +17,15 @@
    ```FinalTermProject-FTP``` directory).
    
    ## Features:
-     Accounts file stores usernames and passwords in the format ```<username1>:<password1>;<username2>:<password2>;...``` and 
-     double encryption(with built in c function) is used(once on client side and once on server side) to prevent the stealing
-     *meaningful* passwords as the go from client to server(still not fully secure though, this isn't SFTP). 
+   Accounts file stores usernames and passwords in the format ```<username1>:<password1>;<username2>:<password2>;...``` and 
+   double encryption(with built in c function) is used(once on client side and once on server side) to prevent the stealing
+   *meaningful* passwords as the go from client to server(still not fully secure though, this isn't SFTP). 
      
-     Makes semaphore for each file using a string to int hash function for the semaphore keys. They get downed upon pulling and
-     reset to one upon pushing.
+   Makes semaphore for each file using a string to int hash function for the semaphore keys. They get downed upon pulling and
+   reset to one upon pushing.
      
-     Stores pull and push permissions in sepreate files in the format ```<file1>;<usernameA>:<usernameB>:|<file2>;<usernameB>:|```
-     These files are used when granting push/pull requests, viewing push-able/pull-able files, and sharing permissions with
+   Stores pull and push permissions in sepreate files in the format ```<file1>;<usernameA>:<usernameB>:|<file2><usernameB>:|```
+   These files are used when granting push/pull requests, viewing push-able/pull-able files, and sharing permissions with
      other users.
      
    ## Bugs:
