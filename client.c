@@ -1,27 +1,34 @@
 #include "networking.h"
 
-
+//handles client side of login/account creation process(defined later in code)
 int check_or_create_account(char * username, char * password, int server_socket, char * protocol);
 
 
 
-//main client connection
+/*=========================
+  client
+
+  args: char * serverIP
+
+  connects to server at serverIP and serves as user interface,
+  handling client requests, and pushing from/pulling into client side files
+  =========================*/
 void client(char * serverIP){
-  char username[BUFFER_SIZE];
-  char password[BUFFER_SIZE];
-  int logged_in = -1;//0 once client is logged in
+    char username[BUFFER_SIZE];
+    char password[BUFFER_SIZE];
+    int logged_in = -1;//0 once client is logged in
 
-  int server_socket;
-  char buffer[BUFFER_SIZE];
-  char ans[BUFFER_SIZE];
-  char file[BUFFER_SIZE];
-  char filePath[BUFFER_SIZE];
-  char fileContent[PACKET_SIZE];
+    char buffer[BUFFER_SIZE];//handles user responses
+    char ans[BUFFER_SIZE];//handles user responses(similar to buffer)
+    char file[BUFFER_SIZE];//file name
+    char filePath[BUFFER_SIZE];//path to file
+    char fileContent[PACKET_SIZE];//up to 32KB for transferring file data between client/server
 
-  server_socket = client_setup(serverIP);
+    //connects to server
+    int server_socket = client_setup(serverIP);
 
 
-    //login code
+    //logging in(or signing up)
     printf("Do you have an account yet?(y/n): ");
     memset(buffer, 0, sizeof(buffer));
     fgets(buffer, 256, stdin);
@@ -33,10 +40,11 @@ void client(char * serverIP){
             fgets(username, 256, stdin);
             *strchr(username, '\n') = 0;
 
-            printf("Password: "); //make this hidden***
+            printf("Password: ");
             fgets(password, 256, stdin);
             *strchr(password, '\n') = 0;
 
+            //attempts to log in
             logged_in = check_or_create_account(username, password,server_socket,"CHECK");
             if (logged_in < 0) {
                 printf("Error logging in. Please try again\n");
@@ -50,10 +58,11 @@ void client(char * serverIP){
             fgets(username, 256, stdin);
             *strchr(username, '\n') = 0;
 
-            printf("Password: "); //make this hidden***
+            printf("Password: ");
             fgets(password, 256, stdin);
             *strchr(password, '\n') = 0;
 
+            //attempts to create account
             logged_in = check_or_create_account(username, password,server_socket,"CREAT");
             if (logged_in < 0) {
                 printf("Error creating account please try again\n");
@@ -98,7 +107,7 @@ void client(char * serverIP){
                 close(fd);
                 //sending file contents up to NULL
                 write(server_socket, fileContent, num_non_null_bytes(fileContent));
-                printf("Pushed from '%s' to '%s'\n", filePath, file); //***
+                printf("Pushed from '%s' to '%s'\n", filePath, file);
             }
         }
         else if(!strcmp("pull",buffer)){//pull file code
@@ -133,7 +142,6 @@ void client(char * serverIP){
         else if(!strcmp("view",buffer)){
             write(server_socket, "VIEW", sizeof("VIEW")); //view request sent
 
-            //VIEWING CODE ***
             memset(fileContent, 0, sizeof(fileContent));
             read(server_socket, fileContent, sizeof(fileContent));
             printf("pull-able files: %s\n", fileContent);
@@ -239,6 +247,13 @@ int client_setup(char * server) {
     return sd;
 }
 
+/*=========================
+  error_check
+
+  args: int i, char* s
+
+  Prints error in errno with s if i is less than 0
+  =========================*/
 void error_check( int i, char *s ) {
     if ( i < 0 ) {
         printf("[%s] error %d: %s\n", s, errno, strerror(errno) );
@@ -246,9 +261,21 @@ void error_check( int i, char *s ) {
     }
 }
 
-//returns 0 if everything checks out
-//returns -1 if failure logging in
-//protocol is either CHECK or CREAT
+
+/*=========================
+  check_or_create_account
+
+  args: char * username, char * password, int server_socket, char * protocol
+
+  If protocol  CREAT(CHECK),
+  then it sends a create account request(sign in request)
+  Sends username and password(which it encrypts) to server_socket and waits for confirmation
+
+  Unsuccessful login when:
+  Username exists(CREAT), Username doesn't exist(CHECK), or password incorrect(CHECK)
+
+  Returns -1 if unsuccessful login and 0 if successful login
+  =========================*/
 int check_or_create_account(char * username, char * password, int server_socket, char * protocol){
 
     //checking if passwords or usernames have colons or semicolons
@@ -277,9 +304,16 @@ int check_or_create_account(char * username, char * password, int server_socket,
     return 0;
 }
 
-//waits until it receives expected message as response
-//returns -1 if error occurs while waiting(error message sent)
-//returns 0 upon success
+/*=========================
+  wait_response
+
+  args: char * message, int server_socket
+
+  Waits for message from server_socket as confirmation
+  If ERROR_RESPONSE received, prints out error message
+
+  Returns -1 if receives error and 0 if receives confirmation
+  =========================*/
 int wait_response(char * message, int server_socket){
     char buffer[BUFFER_SIZE];
     while(strcmp(buffer,message)) {
@@ -296,8 +330,15 @@ int wait_response(char * message, int server_socket){
     return 0;
 }
 
-//returns number of bytes in s up to a NULL char
-//i.e. the number of bytes of meaningful information
+/*=========================
+  num_non_null_bytes
+
+  args: char* s
+
+  Counts how much of s is non null up to the first null byte
+
+  Returns number of non null bytes in s
+  =========================*/
 int num_non_null_bytes(char* s){
     char * nul_pos = strchr(s,'\0');
     //checks if NULL is actually in the string

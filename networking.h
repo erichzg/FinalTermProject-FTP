@@ -32,7 +32,7 @@
 #define ERROR_RESPONSE "-1"//start of every error message to client from server
 #define ERROR_WAIT "-2" //server waits before printing full error
 
-void error_check(int i, char *s);//error handling
+void error_check(int i, char *s);//defined in client
 int num_non_null_bytes(char *s);//defined in client(returns number of non null bytes in s)
 int wait_response(char * message, int socket);//waits for a message from the client/server
 
@@ -45,7 +45,7 @@ int forking_server();//starts up forking server program
 
 void client(char *serverIP);//starts up client program
 
-void handle_error();//handles errno errors
+void handle_error();//handles errno errors(defined in client)
 
 
 #endif

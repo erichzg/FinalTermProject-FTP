@@ -3,6 +3,14 @@
 void subserver(int from_client);
 void print_packet(char *s);
 
+/*=========================
+  view_files_into
+  args: char * user, char * perm_file
+
+  finds all files user has access too in perm_file
+
+  returns pointer to string containing accessible files
+  =========================*/
 char * view_files_into(char * user, char * perm_file) {
   int fd = open(perm_file, O_RDONLY, 0644);
   char fileContent[LOGFILE_SIZE];
@@ -37,7 +45,14 @@ char * view_files_into(char * user, char * perm_file) {
 }
 
 
-//djb2 algorithm for string > int hash
+/*=========================
+  hash
+  args: unsigned char *str
+
+  djb2 from FOSS. hashes str into int(for creating unique semaphore KEY's)
+
+  returns int value from hashing
+  =========================*/
 unsigned int hash(unsigned char *str) {
   unsigned int hash = 5381;
   int c;
@@ -46,14 +61,35 @@ unsigned int hash(unsigned char *str) {
   return hash;
 }
 
+/*=========================
+  handle_error
+
+  args: int i, char* s
+
+  Prints error in errno if there is one
+  =========================*/
 void handle_error(){
     printf("Error: %s\n", strerror(errno));
     exit(1);
 }
+/*=========================
+  print_packet
+
+  args: s
+
+  Prints packet(s) that server recieved(not used with uppercase requests)
+  =========================*/
 void print_packet(char *s){
     printf("[Server]: received [%s]\n", s);
 }
 
+/*=========================
+  forking_server
+
+  args:
+
+  starts up forking server and forks off subserver whenever a client connects
+  =========================*/
 int forking_server() {
 
   int listen_socket;
@@ -66,10 +102,16 @@ int forking_server() {
     f = fork();
     if (f == 0)
       subserver(client_socket);
-    // does parent need to close socket? ***
   }
 }
 
+/*=========================
+  subserver
+  args: int client_socket
+
+  subserver code for handling client through client_socket
+  deals with client requests, account, permission, and file handling
+  =========================*/
 void subserver(int client_socket) {
     char temp_buffer[BUFFER_SIZE];
     char buffer[BUFFER_SIZE];
@@ -161,7 +203,6 @@ void subserver(int client_socket) {
         read(client_socket, file, sizeof(file)); //receives file name
         print_packet(file);
 
-        //file transfer code ***
         strcpy(filePath, "./fileDir/");
         strcat(filePath,file);
         strcat(file, ";"); //adds ; to the end of file name
@@ -219,7 +260,6 @@ void subserver(int client_socket) {
         close(pull_perm_fd);
     }
     else if(!strcmp(buffer,"VIEW") && !logged_in){
-        //VIEWING CODE ***
       char * pull_files;
       pull_files = view_files_into(username, "pull_perm.txt");
       write(client_socket, pull_files, strlen(pull_files));
@@ -239,7 +279,7 @@ void subserver(int client_socket) {
         read(client_socket, file, sizeof(file)); //receives file name
         print_packet(file);
 
-        //verifying permissions to file***
+        //verifying permissions to file
         int perm_fd = open(!strcmp(temp_buffer,"PUSH_SHARE") ? "./push_perm.txt":"./pull_perm.txt",
                            O_RDONLY, 0664); //to work with file permissions
         read(perm_fd, perms_content, sizeof(perms_content));
@@ -406,7 +446,7 @@ int server_setup() {
     hints->ai_family = AF_INET;  //IPv4 address
     hints->ai_socktype = SOCK_STREAM;  //TCP socket
     hints->ai_flags = AI_PASSIVE;  //Use all valid addresses
-    getaddrinfo(NULL, PORT, hints, &results); //NULL means use local address***
+    getaddrinfo(NULL, PORT, hints, &results); //NULL means use local address
 
     //bind the socket to address and port
     i = bind( sd, results->ai_addr, results->ai_addrlen );
