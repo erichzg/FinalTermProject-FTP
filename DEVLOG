@@ -1,1 +1,23 @@
+//========2018-01-18========//
+*Daniel, Eric, and Nikita: Configuring DW's networking code to find which code is needed for the project.
 
+//========2018-01-22========//
+*Daniel & Nikita: Added encryption
+*Daniel & Nikita: Debugged networking problems
+
+//========2018-01-23========//
+*Eric & Nikita: Added MVP push/pull code(no login needed)
+*Eric & Nikita: Added wait_response function and error handeling
+
+//========2018-01-24========//
+*Nikita: Setup account file protocol and used it for account creation
+*Daniel & Nikita: Added sign in verification code and encryption on both client AND server
+*Nikita: Setup push permissions file protocol and used if for verifying push permissions
+*Nikita: Added code for sharing push permissions with other users
+*Nikita: Extended sharing/verifying permissions to pulling
+
+//========2018-01-25========//
+*Eric: Added code for viewing pushable/pullable files
+*Eric: Debugged networking issues on stuy computers
+*Eric: Implemented semaphores and did some testing
+*Daniel, Eric, & Nikita: Debugging of semaphores and commenting
