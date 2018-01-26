@@ -31,8 +31,15 @@
    Stores pull and push permissions in separate **permissions files** in the format ```<file1>;<usernameA>:<usernameB>:|<file2><usernameB>:|```
    These files are used when granting push/pull requests, viewing push-able/pull-able files, and sharing permissions with
      other users.
-     
-   ## Bugs:
+   
+   ## Attempted:
+   File parsing into packets when sending file data between server/client.
+   
+   Preventing clients from pushing to file they can't pull due to it having been pulled(but not pushed back) by someone else.
+   
+   A multiple directory FTP.
+   
+   ## Bugs & Unresolved Issues:
    **Empty files** should not be pushed/pulled(when pushing, you must specify a path to a file that exists and contains
    some data) If client program freezes up due to this bug, it should be rerun. 
      
@@ -50,4 +57,5 @@
    by clients without going through server). Also passwords can be seen when typed into terminal. This is a high school cs
    project, so please don't store your actual passwords here.
      
-   File ```base``` in fileDir should not be interracted with(will cause semaphore blockages).
+   File ```base``` in fileDir should not be interracted with(will cause semaphore blockages). If client/server program freeze up due 
+   to this bug, they should be rerun.
