@@ -25,14 +25,15 @@ char * view_files_into(char * user, char * perm_file) {
   char * correct_files;
   correct_files = (char *) calloc(LOGFILE_SIZE, sizeof(char));
    
-  /* get the first token */
+  // get the first token
   token = strtok(fileContent, s);
 
-  /* walk through other tokens */
+  // walk through other tokens
   while( token != NULL ) {
     if(strstr(token,user)){
-      strncpy(file, token, sizeof(char) * (int)(strchr(token, ';')-token));
-      strcpy(correct_files + strlen(correct_files), file);
+        memset(file, 0, sizeof(file));
+        strncpy(file, token, sizeof(char) * (int)(strchr(token, ';')-token));
+        strcpy(correct_files + strlen(correct_files), file);
       strcpy(correct_files + strlen(correct_files), ", ");
     }
     token = strtok(NULL, s);
@@ -40,7 +41,6 @@ char * view_files_into(char * user, char * perm_file) {
   if (!(correct_files[0])) {
     return "\n";
   }
-  
   return correct_files;
 }
 

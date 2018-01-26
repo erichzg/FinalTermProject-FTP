@@ -25,7 +25,7 @@
 #define NETWORKING_H
 
 #define BUFFER_SIZE 256
-#define PORT "9004"
+#define PORT "9001"
 #define TEST_IP "0.0.0.0"
 #define PACKET_SIZE 32768 //number of bytes that can be send between client and server for file transfers
 #define LOGFILE_SIZE 2048 //number of bytes for users
